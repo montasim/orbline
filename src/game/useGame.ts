@@ -3,8 +3,7 @@
 import confetti from 'canvas-confetti'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { audio } from './audio'
-import { type BgTheme, type IconName, LEVELS } from './data'
-import { Background } from './engine/background'
+import { type IconName, LEVELS } from './data'
 import { resolveCollisions } from './engine/collisions'
 import { ObstacleManager } from './engine/obstacles'
 import { ParticleSystem } from './engine/particles'
@@ -13,6 +12,8 @@ import { PowerupManager } from './engine/powerups'
 import { ScoreManager } from './engine/score'
 import { storage } from './storage'
 import type { GameApi, GameState, PowerupStatus, ScoreData, Toast } from './types'
+import { useOnlineRun } from './useOnlineRun'
+import { type GameMap, mapById, type Scene, type Tier } from './maps'
 
 interface Engine {
   player: Player | null
@@ -20,7 +21,7 @@ interface Engine {
   powerups: PowerupManager | null
   particles: ParticleSystem | null
   score: ScoreManager | null
-  background: Background | null
+  background: Scene | null
   groundY: number
   lastTime: number
   animationFrameId: number | null
@@ -30,6 +31,7 @@ interface Engine {
   shake: { intensity: number }
   jumpBuffer: number
   hadSpeedBoost: boolean
+  view: { w: number; h: number; scale: number }
 }
 
 interface RunStats {
@@ -40,21 +42,63 @@ interface RunStats {
   speedBoosts: number
 }
 
-const MENU_THEME: BgTheme = LEVELS[0].bgTheme
+/** Narrow (portrait) screens see at least this much track: the world is zoomed out instead of cropped. */
+const MIN_VIEW_WIDTH = 760
+/** Height kept clear for the on-screen Jump/Slide buttons on touch devices (button + HUD padding, CSS px). */
+const touchControlsReserve = (cssW: number) => (cssW >= 640 ? 128 : 100)
+
+/**
+ * Three sizes, kept apart: CSS px (layout), logical units (what the game simulates and scenes draw in)
+ * and backing pixels (CSS × device pixel ratio, so phones and tablets render sharp).
+ */
+function measureView() {
+  const cssW = Math.max(1, window.innerWidth || document.documentElement.clientWidth)
+  const cssH = Math.max(1, window.innerHeight || document.documentElement.clientHeight)
+  const portrait = cssH > cssW
+  const touch = window.matchMedia('(pointer: coarse)').matches
+  const zoom = Math.max(1, MIN_VIEW_WIDTH / cssW) // logical units per CSS px
+  // shortcut: backing store capped at 2× and ~4 MP so big screens stay fast; raise if perf allows
+  const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(4_000_000 / (cssW * cssH))))
+  const margin = portrait ? clamp(cssH * 0.24, 90, 145) : clamp(cssH * 0.18, 55, 85)
+  const groundMargin = touch ? Math.max(margin, touchControlsReserve(cssW)) : margin
+  // keep the runner clear of the Slide button on touch screens
+  const playerX = Math.max(touch ? 100 : 50, Math.min(140, cssW * (portrait ? 0.18 : 0.14)))
+  return {
+    portrait,
+    w: cssW * zoom,
+    h: cssH * zoom,
+    groundY: Math.max(130, Math.round((cssH - groundMargin) * zoom)),
+    playerX: Math.round(playerX * zoom),
+    backingW: Math.round(cssW * dpr),
+    backingH: Math.round(cssH * dpr),
+    /** backing pixels per logical unit */
+    scale: dpr / zoom,
+  }
+}
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
+
+/** LEVELS index (difficulty stage) the score has reached, as a map tier. */
+const tierOf = (score: ScoreManager | null): Tier => ((score ? score.currentLevel.level - 1 : 0) as Tier)
+/** Confetti in the aurora palette. */
+const SNOW_CONFETTI = ['#5eead4', '#a7f3d0', '#7dd3fc', '#e0f2fe', '#ffffff']
 
 export function useGame(): GameApi {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const { onlineRun, beginRun, endRun, submitPendingRun } = useOnlineRun()
   const [gameState, setGameState] = useState<GameState>('MENU')
   // Storage-backed initial values are loaded in a mount effect so SSR and first client render match.
-  const [selectedSkin, setSelectedSkin] = useState('ninja')
+  const [selectedSkin, setSelectedSkin] = useState('frost')
+  const [selectedMap, setSelectedMap] = useState('arctic')
+  const mapRef = useRef<GameMap>(mapById('arctic'))
   const [scoreData, setScoreData] = useState<ScoreData>({
     distance: 0,
     coins: 0,
     score: 0,
     bestScore: 0,
     level: 1,
-    levelName: 'Beginner',
-    levelTitle: 'Twilight Forest',
+    levelName: LEVELS[0].name,
+    levelTitle: LEVELS[0].title,
     multiplier: 1,
   })
   const [powerupStatus, setPowerupStatus] = useState<PowerupStatus>({
@@ -86,10 +130,16 @@ export function useGame(): GameApi {
     shake: { intensity: 0 },
     jumpBuffer: 0,
     hadSpeedBoost: false,
+    view: { w: 1, h: 1, scale: 1 },
   })
 
   useEffect(() => {
+    // dev-only handle for testing levels/power-ups from the console; stripped from production builds
+    if (import.meta.env.DEV) (window as unknown as { __orbline: unknown }).__orbline = engine
     setSelectedSkin(storage.getSelectedSkin())
+    // dev-only ?map=<id> preview that doesn't touch the saved choice (lets tabs preview different maps)
+    const previewMap = import.meta.env.DEV ? new URLSearchParams(window.location.search).get('map') : null
+    setSelectedMap(previewMap ?? storage.getSelectedMap())
     setScoreData((d) => ({ ...d, bestScore: storage.getBestScore() }))
   }, [])
 
@@ -102,7 +152,7 @@ export function useGame(): GameApi {
     (stats: RunStats) => {
       const unlock = (id: string) => {
         const a = storage.unlockAchievement(id)
-        if (a) showToast('Achievement Unlocked!', a.title)
+        if (a) showToast('Trophy unlocked', a.title, 'Trophy')
       }
       if (stats.isFirstRun) unlock('first_run')
       if (stats.distance >= 500) unlock('reach_500m')
@@ -117,15 +167,20 @@ export function useGame(): GameApi {
   const initEngine = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const width = canvas.width || window.innerWidth
-    const height = canvas.height || window.innerHeight
-    const groundY = Math.max(160, height - Math.min(110, Math.floor(height * 0.22)))
+    // logical size; measureView never returns 0×0 (scenes divide by width)
+    const view = measureView()
+    const { w: width, h: height, groundY } = view
+    const map = mapById(selectedMap)
+    mapRef.current = map
     const player = new Player(width, height, groundY)
     player.setSkin(selectedSkin)
+    player.x = view.playerX
     const score = new ScoreManager()
     score.onLevelUpCallback = (level) => {
-      showToast(`Level ${level.level} Reached!`, level.title, 'Zap')
-      void confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } })
+      const style = map.tiers[level.level - 1]
+      audio.setAmbienceTier((level.level - 1) as Tier)
+      showToast(style.title, `Level ${level.level} · ${style.name}`, 'Zap')
+      void confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 }, colors: [style.accent, ...SNOW_CONFETTI.slice(1)] })
     }
     engine.current = {
       player,
@@ -133,7 +188,7 @@ export function useGame(): GameApi {
       powerups: new PowerupManager(),
       particles: new ParticleSystem(),
       score,
-      background: new Background(width, height, groundY),
+      background: map.createScene(width, height, groundY),
       groundY,
       lastTime: performance.now(),
       animationFrameId: null,
@@ -143,20 +198,23 @@ export function useGame(): GameApi {
       shake: { intensity: 0 },
       jumpBuffer: 0,
       hadSpeedBoost: false,
+      view: { w: width, h: height, scale: view.scale },
     }
-  }, [selectedSkin, showToast])
+  }, [selectedSkin, selectedMap, showToast])
 
   const handleGameOver = useCallback(() => {
     const e = engine.current
     if (!e.score || !e.player) return
     e.isRunning = false
-    audio.stopBgm()
+    audio.stopAmbience()
     e.shake.intensity = 16
     const finalScore = e.score.score
-    const newHigh = finalScore > storage.getBestScore() && finalScore > 0
+    // the HUD is throttled to ~10 Hz, so publish the exact final numbers the server will also see
+    setScoreData((d) => ({ ...d, distance: Math.floor(e.score?.distance ?? 0), coins: e.score?.coins ?? 0, score: finalScore }))
+    const newHigh = finalScore > e.score.startingBest && finalScore > 0
     setIsNewHighScore(newHigh)
-    if (newHigh) void confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 } })
-    storage.saveLeaderboardScore('You', finalScore, e.score.distance)
+    if (newHigh) void confetti({ particleCount: 120, spread: 80, origin: { y: 0.5 }, colors: SNOW_CONFETTI })
+    endRun({ distance: e.score.distance, crystals: e.score.coins, speedBoosts: e.powerupsUsedCount })
     storage.updateDailyChallenge('distance', Math.floor(e.score.distance))
     storage.updateDailyChallenge('coins', e.score.coins)
     storage.updateDailyChallenge('doubleJumps', e.player.totalDoubleJumps)
@@ -169,7 +227,7 @@ export function useGame(): GameApi {
       speedBoosts: e.powerupsUsedCount,
     })
     setGameState('GAMEOVER')
-  }, [checkAchievements])
+  }, [checkAchievements, endRun])
 
   const gameLoop = useCallback(
     function loop(time: number) {
@@ -180,13 +238,16 @@ export function useGame(): GameApi {
       if (!ctx) return
 
       if (!e.isRunning) {
-        // idle frame: animate scenery only, no new frame is scheduled
+        // idle frame: scenery drifts, the orb idles; the menu effect schedules these
         const dt = Math.min((time - (e.lastTime || time)) / 1000, 0.05)
         e.lastTime = time
         if (e.background && e.player) {
-          e.background.update(0.4)
-          e.player.idleTimer += dt
-          e.background.draw(ctx, e.score ? e.score.currentLevel.bgTheme : MENU_THEME)
+          ctx.setTransform(e.view.scale, 0, 0, e.view.scale, 0, 0)
+          // the orb rolls at an easy pace so the title scene feels alive
+          const idleSpeed = 2
+          e.background.update(idleSpeed)
+          e.player.update(dt, e.groundY, null, {}, idleSpeed)
+          e.background.draw(ctx, tierOf(e.score))
           e.player.draw(ctx, e.powerups ? e.powerups.active : {})
         }
         return
@@ -197,6 +258,8 @@ export function useGame(): GameApi {
       const { player, obstacles, powerups, particles, score, background, groundY } = e
       if (!player || !obstacles || !powerups || !particles || !score || !background) return
       const level = score.currentLevel
+      const tier = tierOf(score)
+      const map = mapRef.current
       const boosted = powerups.active.speedBoost
       const speed = boosted ? level.baseSpeed * 1.55 : level.baseSpeed
 
@@ -231,19 +294,20 @@ export function useGame(): GameApi {
         onShieldSaved: () => {
           e.shake.intensity = 10
           const a = storage.unlockAchievement('shield_savior')
-          if (a) showToast('Achievement Unlocked!', a.title)
+          if (a) showToast('Trophy unlocked', a.title, 'Trophy')
         },
       })
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.setTransform(e.view.scale, 0, 0, e.view.scale, 0, 0)
+      ctx.clearRect(0, 0, e.view.w, e.view.h)
       ctx.save()
       if (e.shake.intensity > 0) {
         ctx.translate((Math.random() - 0.5) * e.shake.intensity * 2, (Math.random() - 0.5) * e.shake.intensity * 2)
         e.shake.intensity *= 0.88
         if (e.shake.intensity < 0.2) e.shake.intensity = 0
       }
-      background.draw(ctx, level.bgTheme)
-      obstacles.draw(ctx, level.bgTheme.groundAccent)
+      background.draw(ctx, tier)
+      obstacles.draw(ctx, map.tiers[tier].accent, map.skin, tier)
       powerups.draw(ctx)
       player.draw(ctx, powerups.active)
       particles.draw(ctx)
@@ -258,8 +322,8 @@ export function useGame(): GameApi {
           score: score.score,
           bestScore: score.bestScore,
           level: level.level,
-          levelName: level.name,
-          levelTitle: level.title,
+          levelName: map.tiers[tier].name,
+          levelTitle: map.tiers[tier].title,
           multiplier: score.scoreMultiplier,
         })
         setPowerupStatus({ ...powerups.active })
@@ -270,26 +334,26 @@ export function useGame(): GameApi {
   )
   const startGame = useCallback(() => {
     initEngine()
+    beginRun()
     const e = engine.current
     e.isRunning = true
     e.lastTime = performance.now()
-    audio.startBgm()
-    audio.updateTempo(1)
+    audio.startAmbience(mapRef.current.id, 0)
     setGameState('PLAYING')
     if (e.animationFrameId) cancelAnimationFrame(e.animationFrameId)
     e.animationFrameId = requestAnimationFrame(gameLoop)
-  }, [initEngine, gameLoop])
+  }, [initEngine, gameLoop, beginRun])
 
   const togglePause = useCallback(() => {
     const e = engine.current
     if (gameState === 'PLAYING') {
       e.isRunning = false
-      audio.stopBgm()
+      audio.stopAmbience()
       setGameState('PAUSED')
     } else if (gameState === 'PAUSED') {
       e.isRunning = true
       e.lastTime = performance.now()
-      audio.startBgm()
+      audio.startAmbience(mapRef.current.id, tierOf(e.score))
       setGameState('PLAYING')
       e.animationFrameId = requestAnimationFrame(gameLoop)
     }
@@ -302,7 +366,7 @@ export function useGame(): GameApi {
   const goToMenu = useCallback(() => {
     const e = engine.current
     e.isRunning = false
-    audio.stopBgm()
+    audio.stopAmbience()
     if (e.animationFrameId) cancelAnimationFrame(e.animationFrameId)
     setGameState('MENU')
   }, [])
@@ -311,6 +375,12 @@ export function useGame(): GameApi {
     setSelectedSkin(id)
     storage.setSelectedSkin(id)
     engine.current.player?.setSkin(id)
+  }, [])
+
+  // only offered from the title screen; the engine rebuilds via initEngine's selectedMap dependency
+  const changeMap = useCallback((id: string) => {
+    setSelectedMap(id)
+    storage.setSelectedMap(id)
   }, [])
 
   const triggerJump = useCallback(() => {
@@ -344,15 +414,17 @@ export function useGame(): GameApi {
         lock?: (o: string) => Promise<void>
       }
       if (orientation?.lock) await orientation.lock('landscape')
-      showToast('Screen Mode', 'Rotated to Landscape Mode!', 'Zap')
+      showToast('Landscape mode', 'Turned sideways for the best view')
     } catch {
-      showToast('Screen Rotate', 'Please turn on Auto-Rotate on your phone and rotate sideways!', 'Zap')
+      showToast('Turn your phone', 'Switch on auto-rotate and hold it sideways')
     }
   }, [showToast])
 
   // keyboard
   useEffect(() => {
     const onKeyDown = (ev: KeyboardEvent) => {
+      // typing a leaderboard name must not jump, restart, mute or pause
+      if (ev.target instanceof HTMLElement && ev.target.closest('input, textarea, [contenteditable]')) return
       if (ev.repeat && (ev.code === 'Space' || ev.code === 'ArrowUp')) return
       if (ev.code === 'Space' || ev.code === 'ArrowUp' || ev.key === 'w' || ev.key === 'W') {
         ev.preventDefault()
@@ -370,7 +442,7 @@ export function useGame(): GameApi {
         storage.saveSettings(next)
         audio.setSoundEnabled(next.soundEnabled)
         audio.setMusicEnabled(next.musicEnabled)
-        showToast('Audio Settings', next.soundEnabled ? 'Sound Unmuted' : 'Sound Muted')
+        showToast('Sound', next.soundEnabled ? 'Sound on' : 'Sound off')
       }
     }
     const onKeyUp = (ev: KeyboardEvent) => {
@@ -384,23 +456,18 @@ export function useGame(): GameApi {
     }
   }, [gameState, triggerJump, triggerSlide, triggerStopSlide, togglePause, startGame, showToast])
 
-  // resize / orientation: canvas is sized in CSS pixels (no devicePixelRatio scaling, as in the original)
+  // resize / orientation: backing store follows the device pixel ratio; the world uses logical units (measureView)
   useEffect(() => {
     const applySize = () => {
       const canvas = canvasRef.current
       if (!canvas) return
-      const width = window.innerWidth || document.documentElement.clientWidth
-      const height = window.innerHeight || document.documentElement.clientHeight
-      canvas.width = width
-      canvas.height = height
-      const portrait = height > width
-      setIsPortrait(portrait)
-      const landscape = !portrait
-      const groundMargin = landscape
-        ? Math.min(85, Math.max(55, Math.floor(height * 0.18)))
-        : Math.min(145, Math.max(90, Math.floor(height * 0.24)))
-      const groundY = Math.max(130, height - groundMargin)
+      const view = measureView()
+      canvas.width = view.backingW
+      canvas.height = view.backingH
+      setIsPortrait(view.portrait)
+      const { w: width, h: height, groundY } = view
       const e = engine.current
+      e.view = { w: width, h: height, scale: view.scale }
       const prevGroundY = e.groundY || groundY
       const deltaY = groundY - prevGroundY
       e.groundY = groundY
@@ -409,7 +476,7 @@ export function useGame(): GameApi {
         p.canvasWidth = width
         p.canvasHeight = height
         p.groundY = groundY
-        p.x = Math.max(50, Math.min(140, Math.floor(width * (landscape ? 0.14 : 0.18))))
+        p.x = view.playerX
         if (p.isGrounded) p.y = groundY - p.height
         else if (prevGroundY > 0 && Math.abs(deltaY) > 1) p.y += deltaY
       }
@@ -439,6 +506,20 @@ export function useGame(): GameApi {
     }
   }, [])
 
+  // keep the aurora scene alive behind the title screen (gameLoop takes its idle path)
+  useEffect(() => {
+    if (gameState !== 'MENU') return
+    let id = 0
+    const tick = (t: number) => {
+      // once a run starts, the game loop owns the frames; calling it here would fork a second loop
+      if (engine.current.isRunning) return
+      gameLoop(t)
+      id = requestAnimationFrame(tick)
+    }
+    id = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(id)
+  }, [gameState, gameLoop])
+
   // (re)build the engine and paint a static first frame whenever the skin changes
   useEffect(() => {
     initEngine()
@@ -446,7 +527,8 @@ export function useGame(): GameApi {
     const ctx = canvas?.getContext('2d')
     const { background, score, player } = engine.current
     if (ctx && background && score && player) {
-      background.draw(ctx, score.currentLevel.bgTheme)
+      ctx.setTransform(engine.current.view.scale, 0, 0, engine.current.view.scale, 0, 0)
+      background.draw(ctx, tierOf(score))
       player.draw(ctx, {})
     }
   }, [initEngine])
@@ -466,9 +548,13 @@ export function useGame(): GameApi {
     restartGame,
     goToMenu,
     changeSkin,
+    selectedMap,
+    changeMap,
     triggerJump,
     triggerSlide,
     triggerStopSlide,
     showToast,
+    onlineRun,
+    submitPendingRun,
   }
 }

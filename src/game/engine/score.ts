@@ -8,6 +8,8 @@ export class ScoreManager {
   coins = 0
   score = 0
   bestScore = storage.getBestScore()
+  /** best before this run; bestScore is saved live, so "new best?" must compare against this */
+  startingBest = this.bestScore
   currentLevel: Level = levelForDistance(0)
   scoreMultiplier = 1
   onLevelUpCallback: ((level: Level) => void) | null = null
@@ -17,6 +19,7 @@ export class ScoreManager {
     this.coins = 0
     this.score = 0
     this.bestScore = storage.getBestScore()
+    this.startingBest = this.bestScore
     this.currentLevel = levelForDistance(0)
     this.scoreMultiplier = 1
   }
@@ -29,7 +32,6 @@ export class ScoreManager {
     if (level.level > this.currentLevel.level) {
       this.currentLevel = level
       audio.playLevelUp()
-      audio.updateTempo(level.level)
       this.onLevelUpCallback?.(level)
     }
     this.saveBest()

@@ -10,6 +10,7 @@ export interface Particle {
   maxLife: number
   length?: number
   isStreak?: boolean
+  shard?: boolean
 }
 
 export interface FloatingText {
@@ -44,7 +45,7 @@ export class ParticleSystem {
     this.shockwaves = []
   }
 
-  addFootstepDust(x: number, y: number, color = '#6b7280') {
+  addFootstepDust(x: number, y: number, color = '#e0f2fe') {
     if (this.particles.length > 50) return
     this.particles.push({
       x: x + (Math.random() * 6 - 3),
@@ -59,7 +60,7 @@ export class ParticleSystem {
     })
   }
 
-  addJumpBurst(x: number, y: number, color = '#a855f7') {
+  addJumpBurst(x: number, y: number, color = '#e0f2fe') {
     for (let i = 0; i < 6; i++) {
       const angle = Math.PI * 0.5 + (Math.random() * 1.2 - 0.6)
       const speed = 2 + Math.random() * 3
@@ -77,7 +78,7 @@ export class ParticleSystem {
     }
   }
 
-  addDoubleJumpEffect(x: number, y: number, color = '#00f5ff') {
+  addDoubleJumpEffect(x: number, y: number, color = '#5eead4') {
     this.shockwaves.push({ x, y, radius: 8, maxRadius: 40, color, alpha: 1, lineWidth: 3 })
     for (let i = 0; i < 8; i++) {
       const angle = (Math.PI * 2 * i) / 8
@@ -97,7 +98,7 @@ export class ParticleSystem {
   }
 
   addCoinCollect(x: number, y: number, text = '+1') {
-    this.floatingTexts.push({ x, y, text, color: '#fbbf24', alpha: 1, vy: -1.8, life: 0.6, maxLife: 0.6 })
+    this.floatingTexts.push({ x, y, text, color: '#cffafe', alpha: 1, vy: -1.8, life: 0.6, maxLife: 0.6 })
     for (let i = 0; i < 5; i++) {
       const angle = Math.random() * Math.PI * 2
       const speed = 2 + Math.random() * 3
@@ -107,7 +108,7 @@ export class ParticleSystem {
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         size: 2 + Math.random() * 2.5,
-        color: Math.random() > 0.5 ? '#fbbf24' : '#fef08a',
+        color: Math.random() > 0.5 ? '#ffffff' : '#a5f3fc',
         alpha: 1,
         life: 0.3,
         maxLife: 0.3,
@@ -116,7 +117,7 @@ export class ParticleSystem {
   }
 
   addShieldBreak(x: number, y: number) {
-    this.shockwaves.push({ x, y, radius: 12, maxRadius: 55, color: '#38bdf8', alpha: 1, lineWidth: 4 })
+    this.shockwaves.push({ x, y, radius: 12, maxRadius: 55, color: '#7dd3fc', alpha: 1, lineWidth: 4 })
     for (let i = 0; i < 10; i++) {
       const angle = Math.random() * Math.PI * 2
       const speed = 3 + Math.random() * 5
@@ -126,7 +127,8 @@ export class ParticleSystem {
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         size: 3 + Math.random() * 3,
-        color: '#38bdf8',
+        color: Math.random() > 0.5 ? '#7dd3fc' : '#e0f2fe',
+        shard: true,
         alpha: 1,
         life: 0.4,
         maxLife: 0.4,
@@ -134,8 +136,8 @@ export class ParticleSystem {
     }
   }
 
-  addExplosion(x: number, y: number, color = '#ef4444') {
-    this.shockwaves.push({ x, y, radius: 15, maxRadius: 65, color: '#ff4444', alpha: 1, lineWidth: 5 })
+  addExplosion(x: number, y: number, color = '#e0f2fe') {
+    this.shockwaves.push({ x, y, radius: 15, maxRadius: 65, color, alpha: 1, lineWidth: 5 })
     for (let i = 0; i < 14; i++) {
       const angle = Math.random() * Math.PI * 2
       const speed = 3 + Math.random() * 6
@@ -145,7 +147,8 @@ export class ParticleSystem {
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         size: 3 + Math.random() * 4,
-        color: Math.random() > 0.4 ? color : '#f97316',
+        color: Math.random() > 0.4 ? color : '#7dd3fc',
+        shard: true,
         alpha: 1,
         life: 0.45,
         maxLife: 0.45,
@@ -153,7 +156,7 @@ export class ParticleSystem {
     }
   }
 
-  addSpeedTrail(x: number, y: number, _width: number, height: number, color = '#00f5ff') {
+  addSpeedTrail(x: number, y: number, _width: number, height: number, color = '#5eead4') {
     if (this.particles.length > 40) return
     this.particles.push({
       x: x - Math.random() * 8,
@@ -214,10 +217,16 @@ export class ParticleSystem {
       ctx.fillStyle = p.color
       ctx.beginPath()
       if (p.isStreak) ctx.rect(p.x, p.y, p.length || 15, p.size)
-      else ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+      else if (p.shard) {
+        // ice shard: a thin triangle pointing along its flight direction
+        const sx = p.vx >= 0 ? 1 : -1
+        ctx.moveTo(p.x + sx * p.size * 1.6, p.y + p.vy * 0.4)
+        ctx.lineTo(p.x - sx * p.size * 0.6, p.y - p.size * 0.7)
+        ctx.lineTo(p.x - sx * p.size * 0.4, p.y + p.size * 0.8)
+      } else ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
       ctx.fill()
     }
-    ctx.font = 'bold 15px "Orbitron", sans-serif'
+    ctx.font = '600 16px "Fredoka", "Nunito", sans-serif'
     ctx.textAlign = 'center'
     for (const t of this.floatingTexts) {
       ctx.globalAlpha = t.alpha

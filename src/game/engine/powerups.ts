@@ -1,6 +1,7 @@
 import { audio } from '../audio'
 import { POWERUPS, type PowerupDef } from '../data'
 import type { PowerupStatus } from '../types'
+import { mix } from './background'
 import type { Hitbox } from './collisions'
 import type { ParticleSystem } from './particles'
 
@@ -27,54 +28,63 @@ export class PowerupToken {
     const top = this.y + Math.sin(this.animTimer) * 5
     const cx = this.x + this.width / 2
     const cy = top + this.height / 2
+    const c = this.type.color
+    // frosted bubble badge
+    ctx.globalAlpha = 0.18 + 0.08 * Math.sin(this.animTimer * 2)
+    ctx.fillStyle = c
     ctx.beginPath()
-    ctx.moveTo(cx, cy - 22)
-    ctx.lineTo(cx + 22, cy)
-    ctx.lineTo(cx, cy + 22)
-    ctx.lineTo(cx - 22, cy)
-    ctx.closePath()
-    ctx.fillStyle = this.type.glowColor ? this.type.glowColor.replace('0.9', '0.25') : 'rgba(0, 245, 255, 0.25)'
+    ctx.arc(cx, cy, 23, 0, Math.PI * 2)
     ctx.fill()
-    ctx.fillStyle = 'rgba(15, 15, 30, 0.9)'
-    ctx.strokeStyle = this.type.color
-    ctx.lineWidth = 2.2
+    ctx.globalAlpha = 1
+    const bubble = ctx.createRadialGradient(cx - 5, cy - 6, 2, cx, cy, 18)
+    bubble.addColorStop(0, 'rgba(255, 255, 255, 0.55)')
+    bubble.addColorStop(0.55, mix(c, c, 0, 0.35))
+    bubble.addColorStop(1, mix(c, '#0f172a', 0.25, 0.75))
+    ctx.fillStyle = bubble
     ctx.beginPath()
-    ctx.moveTo(cx, cy - 18)
-    ctx.lineTo(cx + 18, cy)
-    ctx.lineTo(cx, cy + 18)
-    ctx.lineTo(cx - 18, cy)
-    ctx.closePath()
+    ctx.arc(cx, cy, 17, 0, Math.PI * 2)
     ctx.fill()
+    ctx.strokeStyle = c
+    ctx.lineWidth = 2
     ctx.stroke()
-    ctx.fillStyle = this.type.color
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)'
+    ctx.lineWidth = 2
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    ctx.arc(cx, cy, 13, Math.PI * 1.1, Math.PI * 1.45)
+    ctx.stroke()
+    // glyph
+    ctx.fillStyle = '#ffffff'
+    ctx.strokeStyle = mix(c, '#0f172a', 0.55)
+    ctx.lineWidth = 1.4
+    ctx.lineJoin = 'round'
     ctx.beginPath()
     if (this.type.id === 'shield') {
-      ctx.moveTo(cx, cy - 8)
-      ctx.lineTo(cx + 8, cy - 4)
-      ctx.lineTo(cx + 6, cy + 6)
-      ctx.lineTo(cx, cy + 10)
-      ctx.lineTo(cx - 6, cy + 6)
-      ctx.lineTo(cx - 8, cy - 4)
+      ctx.moveTo(cx, cy - 9)
+      ctx.lineTo(cx + 8, cy - 6)
+      ctx.quadraticCurveTo(cx + 8, cy + 5, cx, cy + 10)
+      ctx.quadraticCurveTo(cx - 8, cy + 5, cx - 8, cy - 6)
       ctx.closePath()
     } else if (this.type.id === 'magnet') {
-      ctx.arc(cx, cy - 2, 7, Math.PI, 0, false)
-      ctx.lineTo(cx + 7, cy + 6)
-      ctx.lineTo(cx + 3, cy + 6)
-      ctx.lineTo(cx + 3, cy)
-      ctx.arc(cx, cy, 3, 0, Math.PI, true)
-      ctx.lineTo(cx - 3, cy + 6)
-      ctx.lineTo(cx - 7, cy + 6)
+      ctx.arc(cx, cy - 1, 7.5, Math.PI, 0, false)
+      ctx.lineTo(cx + 7.5, cy + 7)
+      ctx.lineTo(cx + 3.5, cy + 7)
+      ctx.lineTo(cx + 3.5, cy - 1)
+      ctx.arc(cx, cy - 1, 3.5, 0, Math.PI, true)
+      ctx.lineTo(cx - 3.5, cy + 7)
+      ctx.lineTo(cx - 7.5, cy + 7)
       ctx.closePath()
     } else {
-      ctx.moveTo(cx + 2, cy - 9)
-      ctx.lineTo(cx - 5, cy)
-      ctx.lineTo(cx, cy)
-      ctx.lineTo(cx - 2, cy + 9)
-      ctx.lineTo(cx + 5, cy)
-      ctx.lineTo(cx, cy)
+      ctx.moveTo(cx + 3, cy - 10)
+      ctx.lineTo(cx - 6, cy + 1)
+      ctx.lineTo(cx - 0.5, cy + 1)
+      ctx.lineTo(cx - 3, cy + 10)
+      ctx.lineTo(cx + 6, cy - 1.5)
+      ctx.lineTo(cx + 0.5, cy - 1.5)
       ctx.closePath()
     }
     ctx.fill()
+    ctx.stroke()
     ctx.restore()
   }
 

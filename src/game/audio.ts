@@ -1,17 +1,20 @@
-// Procedural Web Audio sound effects + bass-line BGM. Nothing touches the
+// Procedural Web Audio sound effects + nature soundscapes (see ambience.ts). Nothing touches the
 // browser at import time (SSR); settings are read on first use.
+// The ambience toggle is stored as `musicEnabled` so existing saved settings keep working.
+import { Ambience, soundscapeFor } from './ambience'
+import type { Tier } from './maps/types'
 import { storage } from './storage'
 
 type AudioCtor = typeof AudioContext
 
 class GameAudio {
   private ctx: AudioContext | null = null
-  private bgmInterval: ReturnType<typeof setInterval> | null = null
+  private ambience: Ambience | null = null
+  /** what should be playing, so toggling the setting back on can resume it */
+  private wanted: { mapId: string; tier: Tier } | null = null
   private settingsLoaded = false
   private _isMuted = false
   private _musicMuted = false
-  private currentStep = 0
-  private tempo = 120
 
   private loadSettings() {
     if (this.settingsLoaded || typeof window === 'undefined') return
@@ -50,8 +53,8 @@ class GameAudio {
   setMusicEnabled(enabled: boolean) {
     this.loadSettings()
     this._musicMuted = !enabled
-    if (this._musicMuted) this.stopBgm()
-    else this.startBgm()
+    if (this._musicMuted) this.stopNodes()
+    else if (this.wanted) this.startAmbience(this.wanted.mapId, this.wanted.tier)
   }
 
   /** Returns the context if sound effects may play now. */
@@ -209,68 +212,31 @@ class GameAudio {
     osc.stop(t + 0.06)
   }
 
-  startBgm() {
-    if (this.musicMuted || this.bgmInterval) return
+  /** Starts (or restarts) the soundscape for a map at a stage; fades in. */
+  startAmbience(mapId: string, tier: Tier) {
+    this.wanted = { mapId, tier }
+    this.stopNodes()
+    if (this.musicMuted) return
     this.init()
     if (!this.ctx) return
-    const bassline = [55, 55, 65.4, 73.4, 55, 55, 82.4, 73.4]
-    this.currentStep = 0
-    const stepMs = (60 / this.tempo / 2) * 1000
-    this.bgmInterval = setInterval(() => {
-      const ctx = this.ctx
-      if (this._musicMuted || !ctx) return
-      const t = ctx.currentTime
-      const freq = bassline[this.currentStep % bassline.length]
-      const osc = ctx.createOscillator()
-      const filter = ctx.createBiquadFilter()
-      const gain = ctx.createGain()
-      osc.type = 'sawtooth'
-      osc.frequency.setValueAtTime(freq, t)
-      filter.type = 'lowpass'
-      filter.frequency.setValueAtTime(350, t)
-      filter.frequency.exponentialRampToValueAtTime(100, t + 0.18)
-      gain.gain.setValueAtTime(0.07, t)
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2)
-      osc.connect(filter)
-      filter.connect(gain)
-      gain.connect(ctx.destination)
-      osc.start(t)
-      osc.stop(t + 0.22)
-      if (this.currentStep % 2 === 1) {
-        // off-beat hi-hat: short burst of high-passed white noise
-        const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.04, ctx.sampleRate)
-        const data = buffer.getChannelData(0)
-        for (let i = 0; i < buffer.length; i++) data[i] = Math.random() * 2 - 1
-        const src = ctx.createBufferSource()
-        src.buffer = buffer
-        const hp = ctx.createBiquadFilter()
-        hp.type = 'highpass'
-        hp.frequency.setValueAtTime(7000, t)
-        const hatGain = ctx.createGain()
-        hatGain.gain.setValueAtTime(0.025, t)
-        hatGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.04)
-        src.connect(hp)
-        hp.connect(hatGain)
-        hatGain.connect(ctx.destination)
-        src.start(t)
-      }
-      this.currentStep++
-    }, stepMs)
+    this.ambience = new Ambience(this.ctx, soundscapeFor(mapId), tier)
   }
 
-  stopBgm() {
-    if (this.bgmInterval) {
-      clearInterval(this.bgmInterval)
-      this.bgmInterval = null
-    }
+  /** Crossfades the running soundscape to another stage (level-up). */
+  setAmbienceTier(tier: Tier) {
+    if (this.wanted) this.wanted.tier = tier
+    this.ambience?.setTier(tier)
   }
 
-  updateTempo(level: number) {
-    this.tempo = 118 + (level - 1) * 12
-    if (this.bgmInterval) {
-      this.stopBgm()
-      this.startBgm()
-    }
+  /** Fades out (pause, game over, menu). */
+  stopAmbience() {
+    this.wanted = null
+    this.stopNodes()
+  }
+
+  private stopNodes() {
+    this.ambience?.stop()
+    this.ambience = null
   }
 }
 

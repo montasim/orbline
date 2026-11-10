@@ -7,20 +7,20 @@ import {
   type DailyTemplate,
   type DailyType,
   DEFAULT_SETTINGS,
-  type LeaderboardEntry,
-  SEED_LEADERBOARD,
   type Settings,
 } from './data'
 
 const K = {
-  best: 'shadow_runner_best_score',
-  coins: 'shadow_runner_total_coins',
-  skins: 'shadow_runner_unlocked_skins',
-  skin: 'shadow_runner_selected_skin',
-  settings: 'shadow_runner_settings',
-  achievements: 'shadow_runner_achievements',
-  daily: 'shadow_runner_daily_challenge',
-  leaderboard: 'shadow_runner_leaderboard',
+  // keys keep the game's earlier name (Northdash) so existing saves survive the rename to Orbline
+  best: 'northdash_best_score',
+  coins: 'northdash_total_coins',
+  skins: 'northdash_unlocked_skins',
+  skin: 'northdash_selected_skin',
+  map: 'northdash_selected_map',
+  settings: 'northdash_settings',
+  achievements: 'northdash_achievements',
+  daily: 'northdash_daily_challenge',
+  player: 'northdash_player',
 }
 
 function read<T>(key: string, fallback: T): T {
@@ -47,7 +47,8 @@ export interface DailyChallenge extends DailyTemplate {
   claimed: boolean
 }
 
-const today = () => new Date().toISOString().slice(0, 10)
+// local calendar date (YYYY-MM-DD), so the daily rolls over at the player's midnight, not UTC's
+const today = () => new Date().toLocaleDateString('en-CA')
 
 export const storage = {
   getBestScore: (): number => Number(read(K.best, 0)) || 0,
@@ -60,7 +61,7 @@ export const storage = {
     return next
   },
 
-  getUnlockedSkins: (): string[] => read(K.skins, ['ninja']),
+  getUnlockedSkins: (): string[] => read(K.skins, ['frost']),
   unlockSkin(id: string): string[] {
     const list = storage.getUnlockedSkins()
     if (!list.includes(id)) {
@@ -69,8 +70,10 @@ export const storage = {
     }
     return list
   },
-  getSelectedSkin: (): string => read(K.skin, 'ninja'),
+  getSelectedSkin: (): string => read(K.skin, 'frost'),
   setSelectedSkin: (id: string) => write(K.skin, id),
+  getSelectedMap: (): string => read(K.map, 'arctic'),
+  setSelectedMap: (id: string) => write(K.map, id),
 
   getSettings: (): Settings => ({ ...DEFAULT_SETTINGS, ...read<Partial<Settings>>(K.settings, {}) }),
   saveSettings: (s: Settings) => write(K.settings, s),
@@ -119,17 +122,7 @@ export const storage = {
     return d.reward
   },
 
-  getLeaderboard: (): LeaderboardEntry[] => read(K.leaderboard, SEED_LEADERBOARD),
-  saveLeaderboardScore(name: string, score: number, distance: number): LeaderboardEntry[] {
-    const entry: LeaderboardEntry = {
-      id: Date.now().toString(),
-      name: name || 'Player',
-      score: Math.round(score),
-      distance: Math.round(distance),
-      date: today(),
-    }
-    const list = [...storage.getLeaderboard(), entry].sort((a, b) => b.score - a.score).slice(0, 10)
-    write(K.leaderboard, list)
-    return list
-  },
+  /** Online identity for the shared leaderboard; the token proves ownership of the name. */
+  getPlayer: (): { token: string; name: string } | null => read(K.player, null),
+  setPlayer: (p: { token: string; name: string } | null) => write(K.player, p),
 }

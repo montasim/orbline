@@ -9,37 +9,55 @@ interface GameCanvasProps {
   gameState: GameState
 }
 
-/** Full-screen game canvas: tap/click to jump, swipe down to slide. */
+/** Left part of the screen is the slide zone on touch screens; the rest jumps. */
+const SLIDE_ZONE = 0.4
+/** A downward drag this long (CSS px) counts as a swipe-to-slide. */
+const SWIPE_DOWN = 32
+
+/**
+ * Full-screen game canvas.
+ * Touch: tap the right side to jump (instantly, on touch-down; tap again to flip), hold the left side to
+ * slide, or swipe down anywhere (mid-air that's a fast-fall). Each finger is tracked on its own, so one
+ * thumb can hold a slide while the other jumps. Mouse: click to jump.
+ */
 export function GameCanvas({ canvasRef, onJump, onSlide, onStopSlide, gameState }: GameCanvasProps) {
-  const touchStart = useRef({ x: 0, y: 0, time: 0 })
-  // once a touch is seen, ignore the synthetic mousedown that follows it
-  const isTouch = useRef(false)
+  // active touch pointers: where they started and whether they're holding a slide
+  const pointers = useRef(new Map<number, { y: number; sliding: boolean }>())
+  const playing = gameState === 'PLAYING'
+
+  const release = (id: number) => {
+    const p = pointers.current.get(id)
+    pointers.current.delete(id)
+    if (p?.sliding && ![...pointers.current.values()].some((q) => q.sliding)) onStopSlide?.()
+  }
 
   return (
     <div
       className="absolute inset-0 w-full h-full overflow-hidden select-none cursor-pointer touch-none"
-      onMouseDown={(e) => {
-        if (isTouch.current) return
-        if (e.button === 0 && gameState === 'PLAYING') onJump?.()
+      onPointerDown={(e) => {
+        if (!playing) return
+        if (e.pointerType === 'mouse') {
+          if (e.button === 0) onJump?.()
+          return
+        }
+        const inSlideZone = e.clientX < e.currentTarget.clientWidth * SLIDE_ZONE
+        pointers.current.set(e.pointerId, { y: e.clientY, sliding: inSlideZone })
+        if (inSlideZone) onSlide?.()
+        else onJump?.()
       }}
-      onTouchStart={(e) => {
-        isTouch.current = true
-        if (gameState !== 'PLAYING') return
-        const t = e.touches[0]
-        touchStart.current = { x: t.clientX, y: t.clientY, time: Date.now() }
-      }}
-      onTouchEnd={(e) => {
-        if (gameState !== 'PLAYING') return
-        const t = e.changedTouches[0]
-        const dx = t.clientX - touchStart.current.x
-        const dy = t.clientY - touchStart.current.y
-        if (dy > 35 && Math.abs(dy) > Math.abs(dx)) {
+      onPointerMove={(e) => {
+        const p = pointers.current.get(e.pointerId)
+        if (!playing || !p || p.sliding) return
+        if (e.clientY - p.y > SWIPE_DOWN) {
+          p.sliding = true
           onSlide?.()
-          setTimeout(() => onStopSlide?.(), 500)
-        } else onJump?.()
+        }
       }}
+      onPointerUp={(e) => release(e.pointerId)}
+      onPointerCancel={(e) => release(e.pointerId)}
+      onContextMenu={(e) => e.preventDefault()}
     >
-      <canvas ref={canvasRef} id="gameCanvas" className="block w-full h-full bg-[#06060c]" />
+      <canvas ref={canvasRef} id="gameCanvas" className="block w-full h-full bg-[#050b1a]" />
     </div>
   )
 }

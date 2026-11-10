@@ -55,7 +55,7 @@ export function resolveCollisions({
     if (active.speedBoost) {
       obstacles.splice(i, 1)
       audio.playHit()
-      particleSystem?.addExplosion(o.x + o.width / 2, o.y + o.height / 2, '#00f5ff')
+      particleSystem?.addExplosion(o.x + o.width / 2, o.y + o.height / 2, '#a5f3fc')
       continue
     }
     if (active.shield) {
@@ -68,7 +68,7 @@ export function resolveCollisions({
       continue
     }
     audio.playHit()
-    particleSystem?.addExplosion(player.x + player.width / 2, player.y + player.height / 2, '#ef4444')
+    particleSystem?.addExplosion(player.x + player.width / 2, player.y + player.height / 2, '#f8fafc')
     onGameOver?.()
     return
   }

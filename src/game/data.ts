@@ -1,16 +1,23 @@
-// Static game content: levels, skins, power-ups, achievements, daily challenges.
+// Static game content for Orbline: levels, skins, power-ups, achievements, daily challenges.
 
-export type ObstacleType = 'stone' | 'crate' | 'spikes' | 'laser' | 'drone'
+export const GAME_NAME = 'Orbline'
+
+/** Hitbox sizes match the pre-redesign obstacles, so difficulty is unchanged. */
+export type ObstacleType = 'boulder' | 'iceblock' | 'icespikes' | 'pillar' | 'flyer'
 
 export interface BgTheme {
+  /** top → horizon */
   skyGradient: [string, string, string]
-  mountainColor: string
+  /** the two colours each aurora ribbon blends between */
+  aurora: [string, string]
+  peakColor: string
   midgroundColor: string
   groundColor: string
+  /** glowing rim of the ice sheet; also tints obstacles */
   groundAccent: string
-  moonColor: string
-  moonGlow: string
-  gridColor: string
+  crackColor: string
+  /** 0–1: how heavy the snowfall is */
+  snow: number
 }
 
 export interface Level {
@@ -31,8 +38,8 @@ export interface Level {
 export const LEVELS: Level[] = [
   {
     level: 1,
-    name: 'Beginner',
-    title: 'Twilight Forest',
+    name: 'Cub',
+    title: 'Polar Dusk',
     minDistance: 0,
     maxDistance: 300,
     baseSpeed: 7,
@@ -40,22 +47,22 @@ export const LEVELS: Level[] = [
     obstacleIntervalMax: 1800,
     coinSpawnChance: 0.65,
     powerupSpawnChance: 0.14,
-    allowedObstacles: ['stone', 'crate'],
+    allowedObstacles: ['boulder', 'iceblock'],
     bgTheme: {
-      skyGradient: ['#070712', '#151028', '#23153c'],
-      mountainColor: '#0f0c1d',
-      midgroundColor: '#17132a',
-      groundColor: '#100c22',
-      groundAccent: '#a855f7',
-      moonColor: '#e9d5ff',
-      moonGlow: 'rgba(168, 85, 247, 0.4)',
-      gridColor: 'rgba(168, 85, 247, 0.15)',
+      skyGradient: ['#050b1a', '#0b1a3a', '#1c2f5c'],
+      aurora: ['#2dd4bf', '#a7f3d0'],
+      peakColor: '#1b2a4a',
+      midgroundColor: '#13213d',
+      groundColor: '#dbeafe',
+      groundAccent: '#5eead4',
+      crackColor: 'rgba(56, 120, 160, 0.35)',
+      snow: 0.35,
     },
   },
   {
     level: 2,
-    name: 'Intermediate',
-    title: 'Neon Metropolis',
+    name: 'Scout',
+    title: 'Aurora Field',
     minDistance: 300,
     maxDistance: 800,
     baseSpeed: 8.8,
@@ -63,22 +70,22 @@ export const LEVELS: Level[] = [
     obstacleIntervalMax: 1500,
     coinSpawnChance: 0.75,
     powerupSpawnChance: 0.18,
-    allowedObstacles: ['stone', 'crate', 'spikes', 'drone'],
+    allowedObstacles: ['boulder', 'iceblock', 'icespikes', 'flyer'],
     bgTheme: {
-      skyGradient: ['#040a16', '#091c30', '#0a2a44'],
-      mountainColor: '#051424',
-      midgroundColor: '#0b263e',
-      groundColor: '#071828',
-      groundAccent: '#00f5ff',
-      moonColor: '#a5f3fc',
-      moonGlow: 'rgba(0, 245, 255, 0.4)',
-      gridColor: 'rgba(0, 245, 255, 0.18)',
+      skyGradient: ['#03100f', '#06302c', '#0c4a45'],
+      aurora: ['#34d399', '#22d3ee'],
+      peakColor: '#0f3a3a',
+      midgroundColor: '#0a2a2b',
+      groundColor: '#d1fae5',
+      groundAccent: '#34d399',
+      crackColor: 'rgba(20, 110, 100, 0.35)',
+      snow: 0.2,
     },
   },
   {
     level: 3,
-    name: 'Advanced',
-    title: 'Crimson Citadel',
+    name: 'Ranger',
+    title: 'Blizzard Pass',
     minDistance: 800,
     maxDistance: 1500,
     baseSpeed: 10.6,
@@ -86,22 +93,22 @@ export const LEVELS: Level[] = [
     obstacleIntervalMax: 1300,
     coinSpawnChance: 0.8,
     powerupSpawnChance: 0.22,
-    allowedObstacles: ['crate', 'spikes', 'laser', 'drone'],
+    allowedObstacles: ['iceblock', 'icespikes', 'pillar', 'flyer'],
     bgTheme: {
-      skyGradient: ['#120408', '#2d0912', '#440f1a'],
-      mountainColor: '#20070e',
-      midgroundColor: '#320b16',
-      groundColor: '#1a050b',
-      groundAccent: '#ef4444',
-      moonColor: '#fca5a5',
-      moonGlow: 'rgba(239, 68, 68, 0.45)',
-      gridColor: 'rgba(239, 68, 68, 0.2)',
+      skyGradient: ['#0e1420', '#26324a', '#4a5a78'],
+      aurora: ['#93c5fd', '#e0e7ff'],
+      peakColor: '#3a4660',
+      midgroundColor: '#2a3550',
+      groundColor: '#e2e8f0',
+      groundAccent: '#93c5fd',
+      crackColor: 'rgba(70, 90, 130, 0.4)',
+      snow: 1,
     },
   },
   {
     level: 4,
-    name: 'Shadow Master',
-    title: 'Abyssal Void',
+    name: 'Legend',
+    title: 'Starfall Summit',
     minDistance: 1500,
     maxDistance: Number.POSITIVE_INFINITY,
     baseSpeed: 12.6,
@@ -109,16 +116,16 @@ export const LEVELS: Level[] = [
     obstacleIntervalMax: 1100,
     coinSpawnChance: 0.85,
     powerupSpawnChance: 0.25,
-    allowedObstacles: ['stone', 'crate', 'spikes', 'laser', 'drone'],
+    allowedObstacles: ['boulder', 'iceblock', 'icespikes', 'pillar', 'flyer'],
     bgTheme: {
-      skyGradient: ['#080410', '#180728', '#2b0b42'],
-      mountainColor: '#120420',
-      midgroundColor: '#220838',
-      groundColor: '#0d0317',
-      groundAccent: '#eab308',
-      moonColor: '#fde047',
-      moonGlow: 'rgba(234, 179, 8, 0.5)',
-      gridColor: 'rgba(234, 179, 8, 0.25)',
+      skyGradient: ['#0a0418', '#1e0b3a', '#3b1460'],
+      aurora: ['#e879f9', '#818cf8'],
+      peakColor: '#2a1748',
+      midgroundColor: '#1d1036',
+      groundColor: '#ede9fe',
+      groundAccent: '#f0abfc',
+      crackColor: 'rgba(120, 70, 170, 0.35)',
+      snow: 0.5,
     },
   },
 ]
@@ -130,6 +137,7 @@ export function levelForDistance(distance: number): Level {
   return LEVELS[0]
 }
 
+/** A runner-orb colourway: `color` is the core, `accent` the rim light and trail. */
 export interface Skin {
   id: string
   name: string
@@ -144,48 +152,48 @@ export interface Skin {
 
 export const SKINS: Skin[] = [
   {
-    id: 'ninja',
-    name: 'Shadow Shinobi',
-    desc: 'The stealth master clad in midnight silk and violet mist.',
+    id: 'frost',
+    name: 'Frost Orb',
+    desc: 'A cool teal core that hums like glacier ice.',
     price: 0,
-    color: '#a855f7',
-    glowColor: 'rgba(168, 85, 247, 0.8)',
-    trailColor: 'rgba(168, 85, 247, 0.4)',
-    accent: '#c084fc',
+    color: '#14b8a6',
+    glowColor: 'rgba(45, 212, 191, 0.8)',
+    trailColor: 'rgba(45, 212, 191, 0.4)',
+    accent: '#5eead4',
     badge: 'Classic',
   },
   {
-    id: 'cyber',
-    name: 'Neon Phantom',
-    desc: 'Augmented cyber-runner powered by hyper-charged turquoise energy.',
+    id: 'ember',
+    name: 'Ember Orb',
+    desc: 'A warm sunset glow that leaves a trail of sparks.',
     price: 250,
-    color: '#06b6d4',
-    glowColor: 'rgba(6, 182, 212, 0.8)',
-    trailColor: 'rgba(6, 182, 212, 0.4)',
-    accent: '#22d3ee',
-    badge: 'Cyber',
+    color: '#f97316',
+    glowColor: 'rgba(251, 146, 60, 0.8)',
+    trailColor: 'rgba(251, 146, 60, 0.4)',
+    accent: '#fdba74',
+    badge: 'Warm',
   },
   {
-    id: 'specter',
-    name: 'Crimson Specter',
-    desc: 'A fiery demon shadow that leaves scorched embers with each jump.',
+    id: 'aurora',
+    name: 'Aurora Orb',
+    desc: 'Spun from the northern lights, shimmering magenta.',
     price: 500,
-    color: '#ef4444',
-    glowColor: 'rgba(239, 68, 68, 0.8)',
-    trailColor: 'rgba(239, 68, 68, 0.4)',
-    accent: '#f87171',
-    badge: 'Infernal',
+    color: '#c026d3',
+    glowColor: 'rgba(232, 121, 249, 0.8)',
+    trailColor: 'rgba(232, 121, 249, 0.4)',
+    accent: '#f0abfc',
+    badge: 'Mystic',
   },
   {
-    id: 'gold',
-    name: 'Solar Sovereign',
-    desc: 'Legendary shadow forged in pure solar gold and divine light.',
+    id: 'starlit',
+    name: 'Starlit Orb',
+    desc: 'A legendary indigo core ringed in starlight gold.',
     price: 1000,
-    color: '#eab308',
-    glowColor: 'rgba(234, 179, 8, 0.9)',
-    trailColor: 'rgba(234, 179, 8, 0.5)',
+    color: '#4f46e5',
+    glowColor: 'rgba(253, 224, 71, 0.9)',
+    trailColor: 'rgba(253, 224, 71, 0.5)',
     accent: '#fde047',
-    badge: 'Mythic',
+    badge: 'Legendary',
   },
 ]
 
@@ -205,31 +213,32 @@ export type IconName =
   | 'Wind'
   | 'Magnet'
 
+/** ids are referenced by engine logic; names/colours are presentation. */
 export const POWERUPS = {
   SHIELD: {
     id: 'shield',
-    name: 'Shadow Aegis',
-    desc: 'Absorbs 1 fatal collision',
-    color: '#38bdf8',
-    glowColor: 'rgba(56, 189, 248, 0.9)',
+    name: 'Frost Ward',
+    desc: 'An ice bubble that absorbs 1 crash',
+    color: '#7dd3fc',
+    glowColor: 'rgba(125, 211, 252, 0.9)',
     duration: 0,
     icon: 'Shield',
   },
   MAGNET: {
     id: 'magnet',
-    name: 'Orb Magnet',
-    desc: 'Pulls all nearby coins to you',
-    color: '#ec4899',
-    glowColor: 'rgba(236, 72, 153, 0.9)',
+    name: 'Crystal Lure',
+    desc: 'Draws nearby crystals to you',
+    color: '#f0abfc',
+    glowColor: 'rgba(240, 171, 252, 0.9)',
     duration: 8,
     icon: 'Magnet',
   },
   SPEED: {
     id: 'speedBoost',
-    name: 'Shadow Rush',
-    desc: 'Hyper speed, invincibility & 2x score',
-    color: '#00f5ff',
-    glowColor: 'rgba(0, 245, 255, 0.9)',
+    name: 'Aurora Rush',
+    desc: 'Ride the lights: speed, invincibility & 2x score',
+    color: '#5eead4',
+    glowColor: 'rgba(94, 234, 212, 0.9)',
     duration: 5,
     icon: 'Zap',
   },
@@ -246,13 +255,13 @@ export interface Achievement {
 }
 
 export const ACHIEVEMENTS: Achievement[] = [
-  { id: 'first_run', title: 'First Shadow Step', desc: 'Complete your first run', reward: 50, icon: 'Footprints' },
-  { id: 'reach_500m', title: 'Shadow Apprentice', desc: 'Reach 500m in a single run', reward: 100, icon: 'Flame' },
-  { id: 'reach_1500m', title: 'Shadow Master', desc: 'Reach 1500m & conquer Level 4', reward: 300, icon: 'Crown' },
-  { id: 'double_jumper', title: 'Sky Walker', desc: 'Perform 20 double jumps in one game', reward: 100, icon: 'Wind' },
-  { id: 'coin_hoarder', title: 'Golden Shadow', desc: 'Collect 100 coins in total', reward: 150, icon: 'Coins' },
-  { id: 'shield_savior', title: 'Iron Will', desc: 'Absorb a fatal hit using your Shield', reward: 120, icon: 'Shield' },
-  { id: 'speed_demon', title: 'Sonic Rift', desc: 'Use Speed Boost power-up 3 times', reward: 150, icon: 'Zap' },
+  { id: 'first_run', title: 'First Tracks', desc: 'Complete your first run', reward: 50, icon: 'Footprints' },
+  { id: 'reach_500m', title: 'Trailblazer', desc: 'Reach 500m in a single run', reward: 100, icon: 'Flame' },
+  { id: 'reach_1500m', title: 'Summit Seeker', desc: 'Reach Starfall Summit (1500m)', reward: 300, icon: 'Crown' },
+  { id: 'double_jumper', title: 'Sky Hopper', desc: 'Perform 20 double jumps in one run', reward: 100, icon: 'Wind' },
+  { id: 'coin_hoarder', title: 'Crystal Keeper', desc: 'Collect 100 crystals in total', reward: 150, icon: 'Coins' },
+  { id: 'shield_savior', title: 'Frostbound', desc: 'Survive a crash with Frost Ward', reward: 120, icon: 'Shield' },
+  { id: 'speed_demon', title: 'Northern Lights', desc: 'Use Aurora Rush 3 times', reward: 150, icon: 'Zap' },
 ]
 
 export type DailyType = 'distance' | 'coins' | 'doubleJumps' | 'powerups'
@@ -267,26 +276,10 @@ export interface DailyTemplate {
 }
 
 export const DAILY_CHALLENGES: DailyTemplate[] = [
-  { id: 'daily_distance', title: 'Distance Dash', desc: 'Reach 600m in any single run today', target: 600, reward: 150, type: 'distance' },
-  { id: 'daily_coins', title: 'Orb Harvester', desc: 'Collect 40 coins today', target: 40, reward: 120, type: 'coins' },
-  { id: 'daily_jumps', title: 'Acrobatics', desc: 'Perform 25 double jumps today', target: 25, reward: 100, type: 'doubleJumps' },
-  { id: 'daily_powerups', title: 'Overdrive', desc: 'Collect 4 power-ups today', target: 4, reward: 140, type: 'powerups' },
-]
-
-export interface LeaderboardEntry {
-  id: string
-  name: string
-  score: number
-  distance: number
-  date: string
-}
-
-export const SEED_LEADERBOARD: LeaderboardEntry[] = [
-  { id: '1', name: 'ShadowKage', score: 3840, distance: 3420, date: '2026-10-24' },
-  { id: '2', name: 'NeonPhantom', score: 2950, distance: 2600, date: '2026-10-25' },
-  { id: '3', name: 'NightStalker', score: 2180, distance: 1980, date: '2026-10-25' },
-  { id: '4', name: 'CyberVoid', score: 1640, distance: 1510, date: '2026-10-26' },
-  { id: '5', name: 'BladeRunner', score: 1120, distance: 990, date: '2026-10-26' },
+  { id: 'daily_distance', title: 'Long Trek', desc: 'Reach 600m in any single run today', target: 600, reward: 150, type: 'distance' },
+  { id: 'daily_coins', title: 'Crystal Gatherer', desc: 'Collect 40 crystals today', target: 40, reward: 120, type: 'coins' },
+  { id: 'daily_jumps', title: 'Snow Acrobat', desc: 'Perform 25 double jumps today', target: 25, reward: 100, type: 'doubleJumps' },
+  { id: 'daily_powerups', title: 'Charged Up', desc: 'Collect 4 power-ups today', target: 4, reward: 140, type: 'powerups' },
 ]
 
 export interface Settings {
