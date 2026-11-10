@@ -14,3 +14,6 @@ todos.json
 
 # local embedded Postgres (PGlite) data
 .pglite
+
+# Netlify local build output and site link
+.netlify
