@@ -1,0 +1,193 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* The game is dark-only: shadcn tokens hold the dark palette directly. */
+:root {
+  color-scheme: dark;
+  --background: #06060c;
+  --foreground: #e2e8f0;
+  --card: #0d0e1a;
+  --card-foreground: #e2e8f0;
+  --popover: #0d0e1a;
+  --popover-foreground: #e2e8f0;
+  --primary: #06b6d4;
+  --primary-foreground: #000000;
+  --secondary: #a855f7;
+  --secondary-foreground: #ffffff;
+  --muted: rgba(255, 255, 255, 0.05);
+  --muted-foreground: #9ca3af;
+  --accent: rgba(255, 255, 255, 0.1);
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --destructive-foreground: #fca5a5;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: #00f5ff;
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --font-sans: 'Outfit', system-ui, -apple-system, sans-serif;
+  --font-game: 'Orbitron', monospace, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    color: #e2e8f0;
+    background-color: #06060c;
+    font-family: var(--font-sans);
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+      env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/*
+ * Ported from the original bundle. Kept unlayered on purpose: in the original
+ * these beat Tailwind utilities (e.g. `glass-panel border-cyan-500/30` keeps
+ * the glass border), so the look only matches if the cascade does too.
+ */
+.font-game {
+  font-family: var(--font-game);
+}
+
+.glass-panel {
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  background: #0d0e1abf;
+  border: 1px solid #a855f733;
+  box-shadow: 0 8px 32px #0009;
+}
+
+.glass-panel-glow {
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  background: #121024d9;
+  border: 1px solid #00f5ff59;
+  box-shadow:
+    0 0 25px #00f5ff33,
+    inset 0 0 15px #a855f726;
+}
+
+.glow-cyan {
+  box-shadow:
+    0 0 20px #06b6d480,
+    inset 0 0 10px #06b6d44d;
+}
+.glow-purple {
+  box-shadow:
+    0 0 25px #a855f780,
+    inset 0 0 10px #a855f74d;
+}
+.glow-crimson {
+  box-shadow:
+    0 0 25px #ef444499,
+    inset 0 0 10px #ef44444d;
+}
+.glow-gold {
+  box-shadow:
+    0 0 25px #eab30899,
+    inset 0 0 10px #eab3084d;
+}
+
+.text-glow-cyan {
+  text-shadow:
+    0 0 12px #06b6d4cc,
+    0 0 24px #06b6d466;
+}
+.text-glow-purple {
+  text-shadow:
+    0 0 14px #a855f7cc,
+    0 0 28px #a855f766;
+}
+.text-glow-gold {
+  text-shadow:
+    0 0 14px #eab308cc,
+    0 0 28px #eab30866;
+}
+
+@keyframes pulseGlow {
+  0%,
+  to {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+}
+.animate-pulse-glow {
+  animation: 2.5s ease-in-out infinite pulseGlow;
+}
+
+@keyframes floatAnim {
+  0%,
+  to {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+.animate-float {
+  animation: 3s ease-in-out infinite floatAnim;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a1480;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb {
+  background: #a855f780;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00f5ffb3;
+}
