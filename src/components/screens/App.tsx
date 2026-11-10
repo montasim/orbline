@@ -7,12 +7,13 @@ import { GameOver } from './GameOver'
 import { Hud } from './Hud'
 import { LeaderboardDialog } from './LeaderboardDialog'
 import { MainMenu } from './MainMenu'
+import { RegionsDialog } from './RegionsDialog'
 import { PauseMenu } from './PauseMenu'
 import { SettingsDialog } from './SettingsDialog'
 import { SkinsDialog } from './SkinsDialog'
 import { ToastNotification } from './ToastNotification'
 
-type Dialog = 'SKINS' | 'DAILY' | 'ACHIEVEMENTS' | 'LEADERBOARD' | 'SETTINGS'
+type Dialog = 'SKINS' | 'DAILY' | 'ACHIEVEMENTS' | 'LEADERBOARD' | 'SETTINGS' | 'REGIONS'
 
 export function App() {
   const game = useGame()
@@ -20,7 +21,7 @@ export function App() {
   const close = () => setDialog(null)
 
   return (
-    <main className="relative w-full h-full min-h-[100dvh] overflow-hidden bg-[#06060c] select-none font-sans text-gray-100">
+    <main className="relative w-full h-full min-h-[100dvh] overflow-hidden bg-night select-none font-sans text-ice">
       <GameCanvas
         canvasRef={game.canvasRef}
         onJump={game.triggerJump}
@@ -31,8 +32,12 @@ export function App() {
 
       {game.toastNotification && <ToastNotification toast={game.toastNotification} />}
 
-      {game.gameState === 'MENU' && (
+      {/* title screen steps aside while a dialog is open, leaving just the scene behind it */}
+      {game.gameState === 'MENU' && !dialog && (
         <MainMenu
+          onOpenRegions={() => setDialog('REGIONS')}
+          selectedMap={game.selectedMap}
+          onChangeMap={game.changeMap}
           onStart={game.startGame}
           onOpenSkins={() => setDialog('SKINS')}
           onOpenDaily={() => setDialog('DAILY')}
@@ -66,6 +71,9 @@ export function App() {
           onRestart={game.restartGame}
           onMainMenu={game.goToMenu}
           onOpenSkins={() => setDialog('SKINS')}
+          onOpenRanks={() => setDialog('LEADERBOARD')}
+          onlineRun={game.onlineRun}
+          onOpenSettings={() => setDialog('SETTINGS')}
         />
       )}
 
@@ -73,7 +81,7 @@ export function App() {
         <DailyChallengeDialog
           onClose={close}
           onClaimReward={(amount) =>
-            game.showToast('Reward Claimed!', `+${amount} Shadow Orbs added to your bank!`, 'Coins')
+            game.showToast('Reward collected!', `+${amount} crystals added to your stash.`, 'Coins')
           }
         />
       )}
@@ -86,8 +94,11 @@ export function App() {
           showToast={game.showToast}
         />
       )}
-      {dialog === 'LEADERBOARD' && <LeaderboardDialog onClose={close} />}
-      {dialog === 'SETTINGS' && <SettingsDialog onClose={close} />}
+      {dialog === 'LEADERBOARD' && <LeaderboardDialog onClose={close} onOpenSettings={() => setDialog('SETTINGS')} />}
+      {dialog === 'SETTINGS' && <SettingsDialog onClose={close} onNameSaved={game.submitPendingRun} />}
+      {dialog === 'REGIONS' && (
+        <RegionsDialog selectedMap={game.selectedMap} onSelect={game.changeMap} onClose={close} />
+      )}
     </main>
   )
 }

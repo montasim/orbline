@@ -1,83 +1,112 @@
-import { useState } from 'react'
-import { HugeiconsIcon } from '@hugeicons/react'
-import { Award01Icon, ChampionIcon, Medal01Icon } from '@hugeicons/core-free-icons'
+import { useCallback, useEffect, useState } from 'react'
+import { RankingIcon } from '@hugeicons/core-free-icons'
 import { storage } from '#/game/storage'
-import { CloseButton } from './CloseButton'
+import { Button } from '#/components/ui/button'
+import { getLeaderboard } from '#/server/leaderboard'
+import { CARD, DialogShell, ROW } from './shared'
 
-function RankBadge({ rank }: { rank: number }) {
-  if (rank === 0)
-    return (
-      <div className="w-7 h-7 rounded-full bg-yellow-500/20 border border-yellow-400 text-yellow-300 flex items-center justify-center">
-        <HugeiconsIcon icon={ChampionIcon} className="w-4 h-4 fill-yellow-400" />
-      </div>
-    )
-  if (rank === 1)
-    return (
-      <div className="w-7 h-7 rounded-full bg-gray-400/20 border border-gray-300 text-gray-200 flex items-center justify-center">
-        <HugeiconsIcon icon={Medal01Icon} className="w-4 h-4 fill-gray-300" />
-      </div>
-    )
-  if (rank === 2)
-    return (
-      <div className="w-7 h-7 rounded-full bg-amber-700/20 border border-amber-600 text-amber-500 flex items-center justify-center">
-        <HugeiconsIcon icon={Medal01Icon} className="w-4 h-4 fill-amber-600" />
-      </div>
-    )
-  return <span className="font-game font-bold text-gray-400 text-xs w-7 text-center">#{rank + 1}</span>
-}
+const MEDALS = ['bg-mint text-ink', 'bg-glacier text-ink', 'bg-aurora text-ink']
 
-export function LeaderboardDialog({ onClose }: { onClose: () => void }) {
-  const [entries] = useState(() => storage.getLeaderboard())
+type Board = Awaited<ReturnType<typeof getLeaderboard>>
+
+export function LeaderboardDialog({ onClose, onOpenSettings }: { onClose: () => void; onOpenSettings: () => void }) {
+  const [board, setBoard] = useState<Board | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [player, setPlayer] = useState(() => storage.getPlayer())
+
+  const load = useCallback(() => {
+    setError(null)
+    getLeaderboard({ data: { token: storage.getPlayer()?.token } })
+      .then((board) => {
+        // a saved identity the server doesn't know (e.g. after a database reset) is forgotten
+        if (storage.getPlayer() && !board.you) {
+          storage.setPlayer(null)
+          setPlayer(null)
+        }
+        setBoard(board)
+      })
+      .catch(() => setError('Could not reach the leaderboard. Check your connection.'))
+  }, [])
+  useEffect(load, [load])
+
+  const you = board?.you
+  const youInTop = board?.top.some((r) => r.isYou)
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
-      <div className="glass-panel-glow max-w-lg w-full p-4 sm:p-7 rounded-3xl flex flex-col gap-4 sm:gap-5 border border-yellow-500/40 shadow-gold relative animate-scale-up max-h-[92vh] overflow-y-auto">
-        <CloseButton onClick={onClose} />
-
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-yellow-500/20 border border-yellow-500/40 text-yellow-400">
-            <HugeiconsIcon icon={Award01Icon} className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="text-xl sm:text-2xl font-game font-bold text-white text-glow-gold">Hall of Shadows</h2>
-            <p className="text-xs text-gray-400">Top runners across the shadow realm</p>
-          </div>
+    <DialogShell
+      kicker="Global leaderboard"
+      icon={RankingIcon}
+      title="Ranks"
+      subtitle={board ? `${board.totalPlayers} runners on the board` : 'The fastest runners in every world'}
+      onClose={onClose}
+      className="max-w-lg"
+    >
+      {error && (
+        <div className={`${ROW} text-sm text-slate-300 flex items-center justify-between gap-3`}>
+          {error}
+          <button type="button" onClick={load} className="hit-area font-bold text-mint shrink-0">
+            Retry
+          </button>
         </div>
+      )}
+      {!board && !error && <p className="text-sm text-slate-400 py-6 text-center">Loading ranks…</p>}
 
-        <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden">
-          <div className="grid grid-cols-12 px-4 py-2.5 bg-white/5 border-b border-white/10 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-            <span className="col-span-2">Rank</span>
-            <span className="col-span-5">Runner</span>
-            <span className="col-span-3 text-right">Distance</span>
-            <span className="col-span-2 text-right">Score</span>
-          </div>
-          <div className="divide-y divide-white/5 max-h-[50vh] overflow-y-auto">
-            {entries.map((e, i) => {
-              const isYou = e.name === 'You'
-              return (
-                <div
-                  key={e.id || i}
-                  className={`grid grid-cols-12 px-4 py-3 items-center text-xs transition-all ${isYou ? 'bg-purple-900/30 text-purple-200 font-semibold' : 'hover:bg-white/5 text-gray-300'}`}
-                >
-                  <div className="col-span-2 flex items-center">
-                    <RankBadge rank={i} />
-                  </div>
-                  <div className="col-span-5 font-bold flex items-center gap-2 truncate">
-                    <span className={isYou ? 'text-purple-300 font-game' : 'text-white'}>{e.name}</span>
-                    {isYou && (
-                      <span className="px-1.5 py-0.5 rounded text-[9px] bg-purple-500/30 text-purple-300 font-sans uppercase">
-                        You
-                      </span>
-                    )}
-                  </div>
-                  <div className="col-span-3 text-right text-gray-400 font-sans">{e.distance}m</div>
-                  <div className="col-span-2 text-right font-game font-bold text-yellow-400">{e.score}</div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
+      {board && board.top.length === 0 && (
+        <p className={`${CARD} text-sm text-slate-300 text-center`}>
+          No ranked runs yet. Finish a run and be the first name on the board!
+        </p>
+      )}
+
+      {board && board.top.length > 0 && (
+        <ol className="flex flex-col gap-2">
+          {board.top.map((r) => (
+            <RankRow key={`${r.rank}-${r.name}`} {...r} />
+          ))}
+          {you?.rank && !youInTop && (
+            <>
+              <li aria-hidden className="text-center text-slate-500 leading-none">
+                ⋮
+              </li>
+              <RankRow rank={you.rank} name={you.name} score={you.score} distance={you.distance} isYou />
+            </>
+          )}
+        </ol>
+      )}
+
+      {/* the name itself is chosen in Settings */}
+      <div className={`${ROW} flex items-center justify-between gap-3 text-sm`}>
+        <span className="text-slate-300 min-w-0 truncate">
+          {player ? (
+            <>
+              Racing as <span className="font-bold text-ice">{player.name}</span>
+              {you && !you.rank && <span className="text-slate-400"> · no ranked run yet</span>}
+            </>
+          ) : (
+            'Pick a name in Settings to join the board.'
+          )}
+        </span>
+        <Button variant="frost" size="chip" className="text-mint shrink-0" onClick={onOpenSettings}>
+          {player ? 'Change' : 'Set name'}
+        </Button>
       </div>
-    </div>
+    </DialogShell>
+  )
+}
+
+function RankRow({ rank, name, score, distance, isYou }: { rank: number; name: string; score: number; distance: number; isYou: boolean }) {
+  return (
+    <li className={`${ROW} flex items-center gap-3 ${isYou ? 'border-mint/50 bg-mint/10' : ''}`}>
+      <span
+        className={`min-w-8 h-8 px-2 shrink-0 rounded-full flex items-center justify-center font-display font-extrabold text-sm ${MEDALS[rank - 1] ?? 'bg-white/6 text-slate-300'}`}
+      >
+        {rank}
+      </span>
+      <span className="flex-1 min-w-0 truncate font-bold text-ice">
+        {name}
+        {isYou && <span className="sr-only"> (you)</span>}
+      </span>
+      <span className="text-sm text-slate-400 tabular-nums">{distance}m</span>
+      <span className="w-14 text-right glow-num text-mint">{score}</span>
+    </li>
   )
 }

@@ -1,14 +1,18 @@
+import type { ReactNode } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
-  ChampionIcon,
-  Coins01Icon,
-  FireIcon,
   Home01Icon,
+  MountainSnowIcon,
+  RankingIcon,
+  OrbitIcon,
   RotateLeft01Icon,
-  TShirtIcon,
+  StarIcon,
 } from '@hugeicons/core-free-icons'
 import { audio } from '#/game/audio'
-import type { ScoreData } from '#/game/types'
+import type { OnlineRun, ScoreData } from '#/game/types'
+import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
+import { Crystals, Overlay, PANEL, ROW } from './shared'
 
 interface GameOverProps {
   scoreData: ScoreData
@@ -16,100 +20,163 @@ interface GameOverProps {
   onRestart: () => void
   onMainMenu: () => void
   onOpenSkins: () => void
+  onOpenRanks: () => void
+  onlineRun: OnlineRun
+  /** opens Settings, where the leaderboard name is chosen */
+  onOpenSettings: () => void
 }
 
-const statLabel = 'text-[10px] font-bold text-gray-400 uppercase tracking-widest'
+function Stat({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    // exception: px-2 (not the card's p-4) so three stats fit side by side at 375px
+    <div className="frost-chip rounded-2xl px-2 py-4 flex flex-col items-center gap-1">
+      <span className="text-xs font-bold text-slate-400">{label}</span>
+      <span className="glow-num text-2xl leading-none">{children}</span>
+    </div>
+  )
+}
 
-export function GameOver({ scoreData, isNewHighScore, onRestart, onMainMenu, onOpenSkins }: GameOverProps) {
+export function GameOver({
+  scoreData,
+  isNewHighScore,
+  onRestart,
+  onMainMenu,
+  onOpenSkins,
+  onOpenRanks,
+  onlineRun,
+  onOpenSettings,
+}: GameOverProps) {
   const click = (fn: () => void) => () => {
     audio.playButtonClick()
     fn()
   }
 
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
-      <div className="glass-panel-glow max-w-md w-full p-4 sm:p-8 rounded-3xl flex flex-col items-center text-center gap-4 sm:gap-6 border border-red-500/40 shadow-crimson max-h-[92vh] overflow-y-auto">
-        <div className="flex flex-col items-center gap-1.5">
-          {isNewHighScore ? (
-            <div className="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-yellow-400/20 border border-yellow-400 text-yellow-300 text-xs font-game font-bold tracking-widest uppercase animate-bounce text-glow-gold">
-              <HugeiconsIcon icon={ChampionIcon} className="w-3.5 h-3.5 fill-yellow-400" />
-              New High Score!
-            </div>
-          ) : (
-            <span className="text-xs uppercase font-game font-semibold tracking-widest text-red-400">Run Terminated</span>
+    <Overlay>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="gameover-title"
+        className={`${PANEL} max-w-md items-center text-center`}
+      >
+        <div className="flex flex-col items-center gap-2">
+          {isNewHighScore && (
+            <Badge variant="outline" className="frost-chip text-aurora border-aurora/40">
+              <HugeiconsIcon icon={StarIcon} className="fill-current" aria-hidden />
+              New best score!
+            </Badge>
           )}
-          <h1 className="text-4xl sm:text-5xl font-game font-black text-white text-glow-purple tracking-wider">
-            GAME OVER
+          <span className="kicker">Run complete</span>
+          <h1 id="gameover-title" className="game-title text-4xl sm:text-5xl">
+            Run over
           </h1>
+          <p className="text-sm text-slate-400 flex items-center gap-2">
+            <HugeiconsIcon icon={MountainSnowIcon} className="size-4 text-glacier" aria-hidden />
+            You made it to <span className="font-bold text-ice">{scoreData.levelTitle}</span>
+          </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 w-full">
-          <div className="glass-panel p-3.5 rounded-2xl flex flex-col items-center border border-purple-500/30">
-            <span className={statLabel}>Distance</span>
-            <span className="text-2xl sm:text-3xl font-game font-black text-purple-300">
+        <div className="grid grid-cols-3 gap-2 w-full">
+          <Stat label="Distance">
+            <span className="inline-flex items-baseline gap-1 text-glacier">
               {scoreData.distance}
-              <span className="text-sm font-sans text-purple-400">m</span>
+              <span className="text-sm">m</span>
             </span>
-          </div>
-          <div className="glass-panel p-3.5 rounded-2xl flex flex-col items-center border border-yellow-500/30">
-            <span className={statLabel}>Orbs Gathered</span>
-            <span className="text-2xl sm:text-3xl font-game font-black text-yellow-400 flex items-center gap-1">
-              <HugeiconsIcon icon={Coins01Icon} className="w-5 h-5 fill-yellow-400" />
-              {scoreData.coins}
-            </span>
-          </div>
-          <div className="glass-panel p-3.5 rounded-2xl flex flex-col items-center border border-cyan-500/30">
-            <span className={statLabel}>Total Score</span>
-            <span className="text-2xl sm:text-3xl font-game font-black text-cyan-300">{scoreData.score}</span>
-          </div>
-          <div className="glass-panel p-3.5 rounded-2xl flex flex-col items-center border border-white/10">
-            <span className={statLabel}>Level Reached</span>
-            <span className="text-lg sm:text-xl font-game font-bold text-gray-200 flex items-center gap-1">
-              <HugeiconsIcon icon={FireIcon} className="w-4 h-4 text-orange-400 fill-orange-400" />
-              Lv.{scoreData.level}
-            </span>
-          </div>
+          </Stat>
+          <Stat label="Crystals">
+            <Crystals amount={scoreData.coins} />
+          </Stat>
+          <Stat label="Score">
+            <span className="text-mint">{scoreData.score}</span>
+          </Stat>
         </div>
 
-        <div className="w-full glass-panel py-2.5 px-4 rounded-xl flex items-center justify-between border border-white/10 text-xs sm:text-sm text-gray-300">
-          <span className="flex items-center gap-2">
-            <HugeiconsIcon icon={ChampionIcon} className="w-4 h-4 text-yellow-400" />
-            All-Time Best
+        <div className={`${ROW} w-full flex items-center justify-between gap-3 text-sm`}>
+          <span className="text-slate-300">
+            Level {scoreData.level} · <span className="text-slate-400">{scoreData.levelName}</span>
           </span>
-          <span className="font-game font-bold text-yellow-400 text-base">{scoreData.bestScore}</span>
+          <span className="flex items-center gap-2 text-slate-300">
+            <HugeiconsIcon icon={StarIcon} className="size-4 text-mint" aria-hidden />
+            {/* label and number differ in font and size: share a baseline so they read as one line */}
+            <span className="flex items-baseline gap-1 leading-none">
+              Best
+              <span className="glow-num text-ice text-base leading-none">{scoreData.bestScore}</span>
+            </span>
+          </span>
         </div>
 
-        <div className="flex flex-col gap-3 w-full">
-          <button
-            onClick={click(onRestart)}
-            className="w-full py-4 px-6 rounded-2xl font-game font-bold text-base sm:text-lg uppercase tracking-wider bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 text-white shadow-purple active:scale-95 transition-all flex items-center justify-center gap-3"
-          >
-            <HugeiconsIcon icon={RotateLeft01Icon} className="w-5 h-5" />
-            Play Again
-          </button>
-          <div className="grid grid-cols-2 gap-3 w-full">
-            <button
-              onClick={click(onOpenSkins)}
-              className="py-3 px-4 rounded-xl font-medium text-xs sm:text-sm uppercase tracking-wider glass-panel hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center gap-2 text-cyan-300 border border-cyan-500/30"
-            >
-              <HugeiconsIcon icon={TShirtIcon} className="w-4 h-4" />
-              Skins
-            </button>
-            <button
-              onClick={click(onMainMenu)}
-              className="py-3 px-4 rounded-xl font-medium text-xs sm:text-sm uppercase tracking-wider glass-panel hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center gap-2 text-gray-300 border border-white/15"
-            >
-              <HugeiconsIcon icon={Home01Icon} className="w-4 h-4" />
+        <RankPanel onlineRun={onlineRun} onOpenSettings={click(onOpenSettings)} onOpenRanks={click(onOpenRanks)} />
+
+        <div className="flex flex-col gap-2 w-full">
+          <Button variant="aurora" onClick={click(onRestart)} className="w-full">
+            <HugeiconsIcon icon={RotateLeft01Icon} aria-hidden />
+            Run again
+          </Button>
+          <div className="grid grid-cols-2 gap-2 w-full">
+            <Button variant="frost" size="md" onClick={click(onOpenSkins)}>
+              <HugeiconsIcon icon={OrbitIcon} className="text-glacier" aria-hidden />
+              Orbs
+            </Button>
+            <Button variant="frost" size="md" onClick={click(onMainMenu)}>
+              <HugeiconsIcon icon={Home01Icon} className="text-slate-400" aria-hidden />
               Menu
-            </button>
+            </Button>
           </div>
         </div>
 
-        <p className="text-[11px] text-gray-400 tracking-wider">
-          Press <kbd className="px-1.5 py-0.5 bg-white/10 rounded font-mono text-gray-200">SPACE</kbd> to quickly
-          restart
+        <p className="pointer-coarse:hidden text-xs text-slate-400">
+          Press <kbd className="nd-kbd">Space</kbd> to run again
         </p>
       </div>
-    </div>
+    </Overlay>
   )
+}
+
+/** Where this run landed on the shared leaderboard. */
+function RankPanel({
+  onlineRun,
+  onOpenSettings,
+  onOpenRanks,
+}: Pick<GameOverProps, 'onlineRun'> & { onOpenRanks: () => void; onOpenSettings: () => void }) {
+  const box = `${ROW} w-full text-sm`
+  switch (onlineRun.phase) {
+    case 'needsName':
+      return (
+        <div className={`${box} flex items-center justify-between gap-3 text-left`}>
+          <p className="text-slate-300">Add a name to put this run on the global ranks</p>
+          <Button variant="frost" size="chip" className="text-mint shrink-0" onClick={onOpenSettings}>
+            Set name
+          </Button>
+        </div>
+      )
+    case 'submitting':
+      return (
+        <p className={`${box} text-slate-300`} aria-live="polite">
+          Checking your run…
+        </p>
+      )
+    case 'accepted':
+      return (
+        <button
+          type="button"
+          onClick={onOpenRanks}
+          aria-live="polite"
+          className={`${box} flex items-center justify-between gap-3`}
+        >
+          <span className="flex items-center gap-2 text-slate-300">
+            <HugeiconsIcon icon={RankingIcon} className="size-4 text-mint" aria-hidden />
+            {onlineRun.personalBest ? 'New personal best · global rank' : 'Your global rank'}
+          </span>
+          <span className="glow-num text-base text-mint">#{onlineRun.rank}</span>
+        </button>
+      )
+    case 'rejected':
+      return <p className={`${box} text-slate-400`}>This run wasn't ranked: {onlineRun.reason}</p>
+    case 'offline':
+      return <p className={`${box} text-slate-400`}>You were offline when this run started, so it isn't ranked.</p>
+    case 'error':
+      return <p className={`${box} text-rose-300`}>{onlineRun.message}</p>
+    default:
+      return null
+  }
 }

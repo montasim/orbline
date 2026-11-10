@@ -4,16 +4,17 @@ import { DEFAULT_ICON, ICONS } from './icons'
 
 export function ToastNotification({ toast }: { toast: Toast }) {
   return (
+    // pl-2 py-2: an even 8px ring around the round icon badge
     <aside
-      aria-label="Notification"
-      className="fixed top-5 left-1/2 -translate-x-1/2 z-50 glass-panel-glow px-5 py-2.5 rounded-2xl flex items-center gap-3 border border-cyan-400 shadow-cyan animate-bounce"
+      aria-live="polite"
+      className="fixed portrait:top-[38%] landscape:top-[calc(8.5rem+env(safe-area-inset-top))] short:landscape:top-[calc(5.5rem+env(safe-area-inset-top))] left-1/2 z-50 -translate-x-1/2 frost-panel frost-glow rounded-full pl-2 pr-4 py-2 flex items-center gap-3 max-w-[calc(100vw-2rem)] animate-toast-in"
     >
-      <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0">
-        <HugeiconsIcon icon={ICONS[toast.icon] ?? DEFAULT_ICON} className="w-4 h-4" />
+      <div className="size-10 rounded-full bg-gradient-to-br from-mint to-lagoon text-ink flex items-center justify-center shrink-0">
+        <HugeiconsIcon icon={ICONS[toast.icon] ?? DEFAULT_ICON} className="size-5" aria-hidden />
       </div>
-      <div className="flex flex-col text-left">
-        <span className="text-[10px] uppercase font-bold tracking-wider text-cyan-400">{toast.title}</span>
-        <span className="text-xs font-semibold text-white">{toast.message}</span>
+      <div className="flex flex-col gap-1 text-left min-w-0">
+        <span className="kicker leading-tight">{toast.title}</span>
+        <span className="font-display text-sm font-bold text-ice truncate">{toast.message}</span>
       </div>
     </aside>
   )

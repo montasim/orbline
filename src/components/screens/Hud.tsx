@@ -1,24 +1,27 @@
 import { useState } from 'react'
-import type { MouseEvent, PointerEvent } from 'react'
+import type { CSSProperties, MouseEvent, PointerEvent } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   ArrowDown02Icon,
   ArrowUp02Icon,
-  Coins01Icon,
-  FireIcon,
   MagnetIcon,
   PauseIcon,
   RotateClockwiseIcon,
   Shield01Icon,
+  SparklesIcon,
   VolumeHighIcon,
   VolumeMute02Icon,
   ZapIcon,
 } from '@hugeicons/core-free-icons'
+import type { IconSvgElement } from '@hugeicons/react'
 import { Progress } from '#/components/ui/progress'
 import { audio } from '#/game/audio'
-import type { IconName } from '#/game/data'
+import { type IconName, POWERUPS, type PowerupDef } from '#/game/data'
 import { storage } from '#/game/storage'
 import type { PowerupStatus, ScoreData } from '#/game/types'
+import { Button } from '#/components/ui/button'
+import { Badge } from '#/components/ui/badge'
+import { Chip, Crystals } from './shared'
 
 interface HudProps {
   scoreData: ScoreData
@@ -32,11 +35,55 @@ interface HudProps {
   onRotate?: () => void
 }
 
-const kbd = 'px-1.5 py-0.5 bg-white/10 rounded text-gray-200 font-mono'
-const timerBar =
-  'w-12 sm:w-16 h-1.5 bg-gray-800 rounded-full *:data-[slot=progress-indicator]:rounded-full *:data-[slot=progress-indicator]:duration-75'
+// slate-300, not 400: these sit on glass over bright worlds too (Bloom Meadow's sky)
+const label = 'font-display text-xs font-extrabold uppercase tracking-widest text-slate-300 leading-none'
+// large touch controls keep their own round shape; spacing, type and icons follow DESIGN.md.
+// Touch screens only: with a mouse/keyboard they would just cover the track.
+const touchBtn =
+  'pointer-fine:hidden frost-chip rounded-full flex flex-col items-center justify-center gap-1 text-sm font-bold active:scale-90 shrink-0 touch-none'
 // Corner buttons sit over the canvas: keep their clicks from reaching it as jumps.
 const stop = (e: MouseEvent) => e.stopPropagation()
+
+function PowerupPill({ def, icon, value, text }: { def: PowerupDef; icon: IconSvgElement; value?: number; text?: string }) {
+  return (
+    <Chip
+      className="pl-1 pr-3 short:pr-1 animate-pop-in"
+      style={{ borderColor: `${def.color}66`, boxShadow: `0 0 18px -6px ${def.glowColor}` }}
+    >
+      <span
+        className="size-7 rounded-full flex items-center justify-center text-ink"
+        style={{ backgroundColor: def.color }}
+      >
+        <HugeiconsIcon icon={icon} className="size-4" aria-hidden />
+      </span>
+      <span className="font-bold text-ice short:hidden">{def.name}</span>
+      {text && <span className="text-xs text-slate-300 short:hidden">{text}</span>}
+      {value !== undefined && (
+        <Progress
+          value={value}
+          aria-label={`${def.name} time left`}
+          className="w-12 sm:w-16 h-2 bg-white/10 *:data-[slot=progress-indicator]:rounded-full *:data-[slot=progress-indicator]:duration-75 *:data-[slot=progress-indicator]:bg-(--pill)"
+          style={{ '--pill': def.color } as CSSProperties}
+        />
+      )}
+    </Chip>
+  )
+}
+
+/** The active power-up pills (rendered in the top area, or compact at the bottom on short screens). */
+function PowerupPills({ status }: { status: PowerupStatus }) {
+  return (
+    <>
+      {status.shield && <PowerupPill def={POWERUPS.SHIELD} icon={Shield01Icon} text="Blocks 1 hit" />}
+      {status.magnet && (
+        <PowerupPill def={POWERUPS.MAGNET} icon={MagnetIcon} value={(status.magnetTimer / status.magnetMax) * 100} />
+      )}
+      {status.speedBoost && (
+        <PowerupPill def={POWERUPS.SPEED} icon={ZapIcon} value={(status.speedBoostTimer / status.speedBoostMax) * 100} />
+      )}
+    </>
+  )
+}
 
 export function Hud({
   scoreData,
@@ -59,7 +106,7 @@ export function Hud({
     audio.setSoundEnabled(next.soundEnabled)
     audio.setMusicEnabled(next.musicEnabled)
     setMuted(!next.soundEnabled)
-    showToast?.('Audio', next.soundEnabled ? 'Unmuted' : 'Muted')
+    showToast?.('Sound', next.soundEnabled ? 'Sound on' : 'Sound off')
   }
 
   const hold = (fn?: () => void) => (e: PointerEvent) => {
@@ -69,161 +116,156 @@ export function Hud({
   }
 
   return (
-    <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2.5 sm:p-5 md:p-6 z-10 select-none">
-      <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-          <div className="glass-panel px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl flex items-center gap-2 border border-purple-500/30">
-            <div className="flex flex-col">
-              <span className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Dist</span>
-              <span className="text-base sm:text-2xl font-game font-bold text-white tracking-wider flex items-baseline gap-0.5 sm:gap-1">
-                {scoreData.distance}{' '}
-                <span className="text-[10px] sm:text-xs text-purple-400 font-sans font-medium">m</span>
+    <div className="absolute inset-0 pointer-events-none flex flex-col justify-between gap-2 p-4 sm:p-6 z-10 select-none">
+      {/* wraps as a fallback when very long numbers would push the buttons off a phone screen */}
+      <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-4 w-full">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* exception: py-2 (and px-3/gap-3 on phones) keeps the HUD score compact so the top bar fits 375px */}
+          <div className="frost-chip rounded-2xl px-3 py-2 sm:px-4 flex items-center gap-3 sm:gap-4">
+            <div className="flex flex-col gap-1">
+              <span className={label}>Distance</span>
+              <span className="flex items-baseline gap-1 glow-num text-lg sm:text-2xl text-ice leading-none">
+                {scoreData.distance}
+                <span className="text-xs text-slate-200">m</span>
               </span>
             </div>
-            <div className="h-6 w-[1px] bg-white/10 hidden md:block" />
-            <div className="hidden md:flex flex-col">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Score</span>
-              <span className="text-xl font-game font-bold text-purple-300">{scoreData.score}</span>
-            </div>
-          </div>
-          <div className="glass-panel px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl flex items-center gap-1.5 border border-cyan-500/30">
-            <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
-            <div className="flex flex-col">
-              <span className="text-[8px] sm:text-[9px] font-bold text-cyan-300 uppercase tracking-wider">
-                Lv.{scoreData.level}
+            <div className="h-8 w-px bg-white/12" />
+            <div className="flex flex-col gap-1">
+              <span className={label}>Score</span>
+              <span className="glow-num text-lg sm:text-2xl text-mint leading-none">
+                {scoreData.score}
               </span>
-              <span className="text-[10px] font-semibold text-gray-200 hidden lg:inline">{scoreData.levelName}</span>
             </div>
           </div>
+          <Chip className="pl-2" title={scoreData.levelName}>
+            <Badge className="font-display font-extrabold uppercase">Lv {scoreData.level}</Badge>
+            <span className="font-bold text-ice hidden sm:inline short:hidden">{scoreData.levelTitle}</span>
+          </Chip>
           {scoreData.multiplier > 1 && (
-            <div className="glass-panel px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl border border-yellow-500/50 flex items-center gap-1 animate-bounce">
-              <HugeiconsIcon icon={FireIcon} className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
-              <span className="font-game font-bold text-yellow-400 text-xs sm:text-sm">2X</span>
-            </div>
+            <Chip className="border-aurora/50 animate-pop-in">
+              <HugeiconsIcon icon={SparklesIcon} className="size-4 text-aurora" aria-hidden />
+              <span className="glow-num text-aurora">×{scoreData.multiplier}</span>
+            </Chip>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 sm:gap-2.5 pointer-events-auto shrink-0">
-          <div className="glass-panel px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl flex items-center gap-1.5 border border-yellow-500/30">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-yellow-400/20 border border-yellow-400/80 flex items-center justify-center">
-              <HugeiconsIcon icon={Coins01Icon} className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-400" />
-            </div>
-            <span className="text-sm sm:text-lg font-game font-bold text-yellow-300">{scoreData.coins}</span>
-          </div>
-          <button
+        <div className="flex items-center gap-2 pointer-events-auto shrink-0 ml-auto">
+          <Chip className="text-base">
+            <Crystals amount={scoreData.coins} className="tabular-nums" />
+          </Chip>
+          <Button
+            variant="frost"
+            size="icon"
             onClick={(e) => {
               e.stopPropagation()
               onRotate?.()
             }}
             onMouseDown={stop}
-            className="glass-panel p-2 sm:p-2.5 rounded-xl hover:bg-white/10 active:scale-95 transition-all text-cyan-300 hover:text-white border border-cyan-500/30"
-            title="Rotate to Landscape Mode"
+            aria-label="Rotate to landscape"
+            title="Rotate to landscape"
           >
-            <HugeiconsIcon icon={RotateClockwiseIcon} className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
-          </button>
-          <button
+            <HugeiconsIcon icon={RotateClockwiseIcon} className="text-glacier" aria-hidden />
+          </Button>
+          <Button
+            variant="frost"
+            size="icon"
             onClick={(e) => {
               e.stopPropagation()
               toggleMute()
             }}
             onMouseDown={stop}
-            className="glass-panel p-2 sm:p-2.5 rounded-xl hover:bg-white/10 active:scale-95 transition-all text-gray-300 hover:text-white"
-            title="Toggle Mute (M)"
+            aria-label={muted ? 'Turn sound on (M)' : 'Turn sound off (M)'}
+            title={muted ? 'Sound off (M)' : 'Sound on (M)'}
           >
-            {muted ? (
-              <HugeiconsIcon icon={VolumeMute02Icon} className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
-            ) : (
-              <HugeiconsIcon icon={VolumeHighIcon} className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
-            )}
-          </button>
-          <button
+            <HugeiconsIcon icon={muted ? VolumeMute02Icon : VolumeHighIcon} className="text-glacier" aria-hidden />
+          </Button>
+          <Button
+            variant="frost"
+            size="icon"
             onClick={(e) => {
               e.stopPropagation()
               onPause()
             }}
             onMouseDown={stop}
-            className="glass-panel p-2 sm:p-2.5 rounded-xl hover:bg-white/10 active:scale-95 transition-all text-gray-300 hover:text-white"
-            title="Pause Game (P or Esc)"
+            aria-label="Pause (P or Esc)"
+            title="Pause (P or Esc)"
           >
-            <HugeiconsIcon icon={PauseIcon} className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
-          </button>
+            <HugeiconsIcon icon={PauseIcon} className="text-mint" aria-hidden />
+          </Button>
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-1.5 self-center my-auto px-2 pointer-events-auto">
+      {/* tucked under the top bar in one row, so the lane ahead stays clear */}
+      <div className="flex flex-wrap justify-center items-center gap-2 self-center mb-auto pointer-events-auto">
         {isPortrait && (
-          <button
-            onClick={onRotate}
-            className="glass-panel px-3 py-1.5 rounded-full flex items-center gap-2 text-cyan-300 text-[10px] sm:text-xs font-semibold border border-cyan-400/40 shadow-cyan mb-1 animate-pulse"
-          >
-            <HugeiconsIcon icon={RotateClockwiseIcon} className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
-            <span>Landscape mode recommendation (Tap to Rotate)</span>
-          </button>
+          <Button variant="frost" size="chip" onClick={onRotate} className="text-glacier">
+            <HugeiconsIcon icon={RotateClockwiseIcon} aria-hidden />
+            Turn sideways for the best view
+          </Button>
         )}
-        {powerupStatus.shield && (
-          <div className="glass-panel-glow px-3 py-1 sm:px-4 sm:py-1.5 rounded-full flex items-center gap-1.5 text-cyan-300 text-[10px] sm:text-xs font-semibold animate-pulse border border-cyan-400/60 shadow-cyan">
-            <HugeiconsIcon icon={Shield01Icon} className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 fill-cyan-400/30" />
-            <span>SHADOW AEGIS (Shield 1 Hit)</span>
-          </div>
-        )}
-        {powerupStatus.magnet && (
-          <div className="glass-panel px-3 py-1 sm:px-4 sm:py-1.5 rounded-full flex items-center gap-2 border border-pink-500/50">
-            <HugeiconsIcon icon={MagnetIcon} className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-pink-400" />
-            <span className="text-[10px] sm:text-xs font-semibold text-pink-300">ORB MAGNET</span>
-            <Progress
-              value={(powerupStatus.magnetTimer / powerupStatus.magnetMax) * 100}
-              className={`${timerBar} *:data-[slot=progress-indicator]:bg-pink-500`}
-            />
-          </div>
-        )}
-        {powerupStatus.speedBoost && (
-          <div className="glass-panel px-3 py-1 sm:px-4 sm:py-1.5 rounded-full flex items-center gap-2 border border-cyan-400/60 shadow-cyan">
-            <HugeiconsIcon icon={ZapIcon} className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 fill-cyan-400/30" />
-            <span className="text-[10px] sm:text-xs font-semibold text-cyan-300">SHADOW RUSH</span>
-            <Progress
-              value={(powerupStatus.speedBoostTimer / powerupStatus.speedBoostMax) * 100}
-              className={`${timerBar} *:data-[slot=progress-indicator]:bg-cyan-400`}
-            />
-          </div>
-        )}
+        {/* short (landscape-phone) screens show them at the bottom instead, clear of the jump arc */}
+        <div className="contents short:hidden">
+          <PowerupPills status={powerupStatus} />
+        </div>
       </div>
 
-      <div className="flex items-end justify-between w-full pointer-events-auto pb-1 sm:pb-3">
+      <div className="flex items-end justify-between w-full pointer-events-auto">
         <button
+          type="button"
           onPointerDown={hold(onSlide)}
           onPointerUp={hold(onStopSlide)}
           onPointerLeave={(e) => {
             e.stopPropagation()
             onStopSlide?.()
           }}
-          className="glass-panel w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-2xl flex flex-col items-center justify-center gap-0.5 sm:gap-1 active:scale-90 active:bg-cyan-500/30 transition-all border-2 border-cyan-500/50 hover:border-cyan-400 shadow-cyan text-cyan-300 shrink-0 touch-none"
+          className={`${touchBtn} size-16 sm:size-20 text-glacier active:bg-glacier/20`}
+          aria-label="Slide (Down or S)"
           title="Slide (↓ / S)"
         >
-          <HugeiconsIcon icon={ArrowDown02Icon} className="w-5 h-5 sm:w-7 sm:h-7" />
-          <span className="text-[9px] sm:text-xs font-bold uppercase tracking-wider">Slide</span>
+          <HugeiconsIcon icon={ArrowDown02Icon} className="size-6" aria-hidden />
+          Slide
         </button>
-        <div className="hidden md:flex items-center gap-4 text-xs text-gray-400 glass-panel px-4 py-2 rounded-xl pointer-events-none">
+        <div className="flex flex-col items-center gap-2 mx-auto">
+          <div className="hidden short:flex gap-2">
+            <PowerupPills status={powerupStatus} />
+          </div>
+        {/* hint strips: chips whose groups are spaced like sections (gap-4), with hint-sized text.
+            Keyboard hints for mouse/keyboard screens; touch hints only where they fit between the buttons. */}
+        <Chip className="hidden pointer-coarse:sm:inline-flex gap-4 px-4 text-xs text-slate-300 pointer-events-none">
           <span>
-            <kbd className={kbd}>1x TAP</kbd> Jump
+            <kbd className="nd-kbd">Tap right</kbd> Jump
           </span>
           <span>
-            <kbd className={kbd}>2x TAP</kbd> 360° Somersault
+            <kbd className="nd-kbd">Tap twice</kbd> Flip
           </span>
           <span>
-            <kbd className={kbd}>↓ / S</kbd> Slide
+            <kbd className="nd-kbd">Hold left</kbd> Slide
+          </span>
+        </Chip>
+        <Chip className="hidden pointer-fine:md:inline-flex mx-auto gap-4 px-4 text-xs text-slate-300 pointer-events-none">
+          <span>
+            <kbd className="nd-kbd">Space</kbd> Jump
           </span>
           <span>
-            <kbd className={kbd}>P</kbd> Pause
+            <kbd className="nd-kbd">Space ×2</kbd> Flip
           </span>
+          <span>
+            <kbd className="nd-kbd">↓</kbd> <kbd className="nd-kbd">S</kbd> Slide
+          </span>
+          <span>
+            <kbd className="nd-kbd">P</kbd> Pause
+          </span>
+        </Chip>
         </div>
         <button
+          type="button"
           onPointerDown={hold(onJump)}
-          className="glass-panel w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-2xl flex flex-col items-center justify-center gap-0.5 sm:gap-1 active:scale-90 active:bg-purple-500/40 transition-all border-2 border-purple-500/60 hover:border-purple-400 shadow-purple text-purple-300 shrink-0 touch-none"
-          title="1st Tap = Jump | 2nd Tap = 360° Rotate"
+          className={`${touchBtn} frost-glow size-20 sm:size-24 text-mint active:bg-mint/20`}
+          aria-label="Jump (tap twice to flip)"
+          title="Tap to jump, tap again to flip"
         >
-          <HugeiconsIcon icon={ArrowUp02Icon} className="w-6 h-6 sm:w-8 sm:h-8" />
-          <span className="text-[11px] sm:text-sm font-game font-bold uppercase tracking-wider">Jump</span>
-          <span className="text-[8px] font-sans text-purple-300/80 -mt-0.5 hidden xs:inline">2x Flip</span>
+          <HugeiconsIcon icon={ArrowUp02Icon} className="size-6" aria-hidden />
+          Jump
         </button>
       </div>
     </div>

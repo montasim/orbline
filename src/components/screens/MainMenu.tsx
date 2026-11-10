@@ -1,18 +1,24 @@
 import { useEffect, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
-  Award01Icon,
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
   Calendar03Icon,
   ChampionIcon,
-  Coins01Icon,
   PlayIcon,
+  RankingIcon,
+  OrbitIcon,
   RotateClockwiseIcon,
   Settings02Icon,
-  SparklesIcon,
-  TShirtIcon,
+  StarIcon,
 } from '@hugeicons/core-free-icons'
 import { audio } from '#/game/audio'
+import { MAPS, mapById } from '#/game/maps'
 import { storage } from '#/game/storage'
+import { Button } from '#/components/ui/button'
+import { OrblineLogo } from './Logo'
+import { MapPreview } from './RegionsDialog'
+import { Chip, Crystals } from './shared'
 
 interface MainMenuProps {
   onStart: () => void
@@ -21,13 +27,18 @@ interface MainMenuProps {
   onOpenAchievements: () => void
   onOpenLeaderboard: () => void
   onOpenSettings: () => void
+  onOpenRegions: () => void
+  /** id of the selected world; the ◀ ▶ arrows switch it in place */
+  selectedMap: string
+  onChangeMap: (id: string) => void
   isPortrait: boolean
   onRotate?: () => void
 }
 
-const navBtn =
-  'flex flex-col items-center gap-1 py-1.5 px-1 sm:py-2 sm:px-4 rounded-xl hover:bg-white/10 active:scale-95 transition-all text-gray-300'
-const navLabel = 'text-[9px] sm:text-[10px] font-bold uppercase tracking-wider'
+// dock keeps its own compact shape: p-2 tray, py-2 items (py-1 on short screens) so it fits landscape phones
+const dockBtn =
+  'relative flex flex-col items-center gap-1 py-2 short:py-1 rounded-2xl text-slate-200 hover:text-ice hover:bg-white/8 active:scale-95 transition'
+const dockLabel = 'font-display text-xs font-extrabold uppercase tracking-wider'
 
 export function MainMenu({
   onStart,
@@ -36,15 +47,18 @@ export function MainMenu({
   onOpenAchievements,
   onOpenLeaderboard,
   onOpenSettings,
+  onOpenRegions,
+  selectedMap,
+  onChangeMap,
   onRotate,
 }: MainMenuProps) {
   // The menu is server-rendered: storage is read after mount so markup matches.
   const [best, setBest] = useState(0)
-  const [coins, setCoins] = useState(0)
+  const [crystals, setCrystals] = useState(0)
   const [dailyReady, setDailyReady] = useState(false)
   useEffect(() => {
     setBest(storage.getBestScore())
-    setCoins(storage.getTotalCoins())
+    setCrystals(storage.getTotalCoins())
     const d = storage.getDailyChallenge()
     setDailyReady(d.completed && !d.claimed)
   }, [])
@@ -54,102 +68,118 @@ export function MainMenu({
     fn?.()
   }
 
+  const world = mapById(selectedMap)
+  const cycleWorld = (step: number) => () => {
+    audio.playButtonClick()
+    const i = MAPS.findIndex((m) => m.id === world.id)
+    onChangeMap(MAPS[(i + step + MAPS.length) % MAPS.length].id)
+  }
+
+  const dock = [
+    { label: 'Orbs', icon: OrbitIcon, onClick: onOpenSkins },
+    { label: 'Daily', icon: Calendar03Icon, onClick: onOpenDaily, dot: dailyReady },
+    { label: 'Trophies', icon: ChampionIcon, onClick: onOpenAchievements },
+    { label: 'Ranks', icon: RankingIcon, onClick: onOpenLeaderboard },
+    { label: 'Settings', icon: Settings02Icon, onClick: onOpenSettings },
+  ]
+
   return (
-    <div className="absolute inset-0 z-20 flex flex-col justify-between p-3 sm:p-6 md:p-10 select-none pointer-events-auto overflow-y-auto pb-[max(12px,env(safe-area-inset-bottom))]">
+    <div className="absolute inset-0 z-20 flex flex-col justify-between gap-4 p-4 sm:p-6 short:gap-2 select-none overflow-y-auto pb-[max(16px,env(safe-area-inset-bottom))]">
+      {/* game-style counters on the left, rotate on the right */}
       <div className="flex items-center justify-between w-full gap-2">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-purple-600 to-cyan-400 p-[1px] shadow-purple shrink-0">
-            <div className="w-full h-full bg-[#0d0c18] rounded-xl sm:rounded-2xl flex items-center justify-center">
-              <HugeiconsIcon icon={SparklesIcon} className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-300 animate-pulse" />
-            </div>
-          </div>
-          <div>
-            <span className="text-[9px] sm:text-[10px] font-bold text-purple-400 tracking-widest uppercase">
-              Version 1.0
+        <div className="flex items-center gap-2">
+          <Chip className="pl-1" title="Best score">
+            <span className="size-7 rounded-full bg-mint/20 text-mint flex items-center justify-center">
+              <HugeiconsIcon icon={StarIcon} className="size-4" aria-hidden />
             </span>
-            <div className="text-[11px] sm:text-xs font-semibold text-gray-300">Shadow Protocol</div>
+            <span className="sr-only">Best score</span>
+            <span className="glow-num text-base text-ice">{best}</span>
+          </Chip>
+          <Chip className="text-base" title="Crystals">
+            <Crystals amount={crystals} className="glow-num" />
+          </Chip>
+        </div>
+        <Button
+          variant="frost"
+          size="icon"
+          onClick={click(onRotate)}
+          aria-label="Rotate to landscape"
+          title="Rotate to landscape"
+          className="text-glacier"
+        >
+          <HugeiconsIcon icon={RotateClockwiseIcon} aria-hidden />
+        </Button>
+      </div>
+
+      <div className="flex flex-col items-center text-center my-auto gap-6 short:gap-2 w-full">
+        <OrblineLogo className="w-full max-w-[min(30rem,88vw)] short:max-w-64 animate-float" />
+
+        {/* big round play: the one obvious thing to press */}
+        <div className="flex flex-col items-center gap-3 short:gap-1">
+          <div className="relative">
+            <span aria-hidden className="play-ring absolute inset-0 rounded-full bg-mint/40" />
+            <Button
+              variant="aurora"
+              onClick={click(onStart)}
+              aria-label="Start run"
+              className="relative size-24 short:size-16 p-0"
+            >
+              <HugeiconsIcon icon={PlayIcon} className="size-10 short:size-7 fill-current translate-x-0.5" aria-hidden />
+            </Button>
           </div>
+          <Chip className="short:hidden h-auto py-1 font-display text-xs font-extrabold uppercase tracking-widest text-ice">
+            <span className="pointer-coarse:hidden">
+              Press <kbd className="nd-kbd">Space</kbd> to play
+            </span>
+            <span className="hidden pointer-coarse:inline">Tap to play</span>
+          </Chip>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* world card: real scene thumbnail, name and tagline; arrows switch worlds, the card opens Regions */}
+        <div className="frost-panel rounded-2xl p-2 flex items-center gap-2 w-full max-w-md">
+          <Button variant="frost" size="icon" onClick={cycleWorld(-1)} aria-label="Previous world" className="text-glacier">
+            <HugeiconsIcon icon={ArrowLeft01Icon} aria-hidden />
+          </Button>
           <button
-            onClick={click(onRotate)}
-            className="glass-panel p-2 sm:p-2.5 rounded-xl hover:bg-white/10 active:scale-95 transition-all text-cyan-400 border border-cyan-500/30 flex items-center gap-1.5"
-            title="Rotate to Landscape Mode"
+            type="button"
+            onClick={click(onOpenRegions)}
+            className="flex-1 min-w-0 flex items-center gap-3 text-left rounded-xl p-1 hover:bg-white/5 transition"
+            aria-label={`World: ${world.name}. Open all worlds`}
           >
-            <HugeiconsIcon icon={RotateClockwiseIcon} className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-cyan-400" />
-            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Rotate</span>
+            <MapPreview
+              key={world.id}
+              map={world}
+              fallback={world.swatch[0]}
+              accent={world.swatch[2]}
+              className="h-12 w-20 short:hidden shrink-0"
+            />
+            <span className="min-w-0 flex flex-col gap-1">
+              <span className="font-display text-sm min-[400px]:text-base font-extrabold uppercase tracking-wide leading-tight text-ice">{world.name}</span>
+              <span className="short:hidden text-xs text-slate-300 truncate">{world.tagline}</span>
+            </span>
           </button>
-          <div className="glass-panel px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl flex items-center gap-1.5 sm:gap-2.5 border border-purple-500/30">
-            <HugeiconsIcon icon={ChampionIcon} className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 shrink-0" />
-            <div className="flex flex-col">
-              <span className="text-[8px] sm:text-[9px] uppercase font-bold text-gray-400 tracking-wider">Best</span>
-              <span className="text-xs sm:text-sm font-game font-bold text-purple-300">{best}</span>
-            </div>
-          </div>
-          <div className="glass-panel px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl flex items-center gap-1.5 sm:gap-2.5 border border-yellow-500/30">
-            <HugeiconsIcon icon={Coins01Icon} className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400 fill-yellow-400 shrink-0" />
-            <div className="flex flex-col">
-              <span className="text-[8px] sm:text-[9px] uppercase font-bold text-gray-400 tracking-wider">Orbs</span>
-              <span className="text-xs sm:text-sm font-game font-bold text-yellow-300">{coins}</span>
-            </div>
-          </div>
+          <Button variant="frost" size="icon" onClick={cycleWorld(1)} aria-label="Next world" className="text-glacier">
+            <HugeiconsIcon icon={ArrowRight01Icon} aria-hidden />
+          </Button>
         </div>
       </div>
 
-      <div className="flex flex-col items-center text-center my-auto py-4 sm:py-8 gap-4 sm:gap-8 max-w-xl mx-auto w-full">
-        <div className="flex flex-col items-center gap-1.5 sm:gap-2">
-          <span className="px-3 py-0.5 sm:px-4 sm:py-1 rounded-full text-[9px] sm:text-[11px] font-game font-bold uppercase tracking-widest bg-purple-500/20 text-purple-300 border border-purple-500/40 animate-pulse">
-            CYBER SHADOW ENDLESS RUNNER
-          </span>
-          <h1 className="text-3xl sm:text-5xl md:text-7xl font-game font-black tracking-wider text-white text-glow-purple drop-shadow-2xl">
-            SHADOW<span className="text-cyan-400 text-glow-cyan">RUNNER</span>
-          </h1>
-          <p className="text-xs sm:text-sm md:text-base text-gray-300 max-w-md font-normal leading-relaxed px-2">
-            Dodge lethal spikes, leap across chasms with double jumps, and harness cosmic power-ups in an endless
-            sprint.
-          </p>
-        </div>
-
-        <div className="flex flex-col items-center gap-2 sm:gap-3 w-full max-w-xs px-4">
-          <button
-            onClick={click(onStart)}
-            className="w-full py-3.5 sm:py-5 px-6 sm:px-8 rounded-2xl font-game font-black text-base sm:text-xl uppercase tracking-widest bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 hover:from-cyan-300 hover:to-purple-500 text-black shadow-cyan active:scale-95 transition-all flex items-center justify-center gap-3 animate-pulse-glow"
-          >
-            <HugeiconsIcon icon={PlayIcon} className="w-5 h-5 sm:w-6 sm:h-6 fill-black" />
-            START SPRINT
+      <nav
+        aria-label="Menu"
+        className="frost-panel max-w-lg w-full mx-auto p-2 rounded-3xl grid grid-cols-5 gap-2"
+      >
+        {dock.map((d) => (
+          <button key={d.label} type="button" onClick={click(d.onClick)} className={dockBtn}>
+            {d.dot && (
+              <span className="absolute top-1 right-[calc(50%-14px)] size-2 rounded-full bg-aurora ring-2 ring-navy">
+                <span className="sr-only">Reward ready</span>
+              </span>
+            )}
+            <HugeiconsIcon icon={d.icon} className="size-5 text-glacier" aria-hidden />
+            <span className={dockLabel}>{d.label}</span>
           </button>
-          <span className="text-[11px] sm:text-xs text-gray-400 tracking-wider">
-            Tap screen or Press <kbd className="px-1.5 py-0.5 bg-white/10 rounded font-mono text-gray-200">SPACE</kbd>
-          </span>
-        </div>
-      </div>
-
-      <div className="glass-panel max-w-lg w-full mx-auto p-1.5 sm:p-2.5 rounded-2xl grid grid-cols-5 sm:flex sm:justify-around border border-white/10 shadow-2xl">
-        <button onClick={click(onOpenSkins)} className={`${navBtn} hover:text-cyan-300`}>
-          <HugeiconsIcon icon={TShirtIcon} className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
-          <span className={navLabel}>Skins</span>
-        </button>
-        <button onClick={click(onOpenDaily)} className={`relative ${navBtn} hover:text-purple-300`}>
-          {dailyReady && (
-            <span className="absolute top-1 right-2 sm:right-3 w-2 h-2 rounded-full bg-yellow-400 animate-ping" />
-          )}
-          <HugeiconsIcon icon={Calendar03Icon} className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
-          <span className={navLabel}>Daily</span>
-        </button>
-        <button onClick={click(onOpenAchievements)} className={`${navBtn} hover:text-cyan-300`}>
-          <HugeiconsIcon icon={ChampionIcon} className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
-          <span className={navLabel}>Trophies</span>
-        </button>
-        <button onClick={click(onOpenLeaderboard)} className={`${navBtn} hover:text-yellow-300`}>
-          <HugeiconsIcon icon={Award01Icon} className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
-          <span className={navLabel}>Ranks</span>
-        </button>
-        <button onClick={click(onOpenSettings)} className={`${navBtn} hover:text-white`}>
-          <HugeiconsIcon icon={Settings02Icon} className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-          <span className={navLabel}>Settings</span>
-        </button>
-      </div>
+        ))}
+      </nav>
     </div>
   )
 }
