@@ -9,6 +9,9 @@ import { nitro } from 'nitro/vite'
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
+  // PGlite loads its .wasm/.data files from its own package dir; bundling it breaks that
+  ssr: { external: ['@electric-sql/pglite'] },
+  optimizeDeps: { exclude: ['@electric-sql/pglite'] },
   plugins: [devtools(), nitro(), tailwindcss(), tanstackStart(), viteReact()],
 })
 
