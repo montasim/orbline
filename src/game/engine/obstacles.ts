@@ -264,13 +264,16 @@ export class ObstacleManager {
     this.nextSpawnInterval = 1600
   }
 
-  update(dt: number, timeMs: number, speed: number, level: Level, groundY: number, player: Player, magnetActive: boolean) {
+  /** Returns the x of an obstacle spawned this frame, or null. */
+  update(dt: number, timeMs: number, speed: number, level: Level, groundY: number, player: Player, magnetActive: boolean): number | null {
+    let spawnedAt: number | null = null
     if (timeMs - this.lastSpawnTime >= this.nextSpawnInterval) {
       this.lastSpawnTime = timeMs
       this.nextSpawnInterval =
         level.obstacleIntervalMin + Math.random() * (level.obstacleIntervalMax - level.obstacleIntervalMin)
       const spawnX = Math.max(player.canvasWidth + 40, player.x + 550)
       this.spawnObstaclePattern(spawnX, groundY, level)
+      spawnedAt = spawnX
     }
     for (let i = this.obstacles.length - 1; i >= 0; i--) {
       const o = this.obstacles[i]
@@ -282,6 +285,7 @@ export class ObstacleManager {
       c.update(dt, speed, player, magnetActive)
       if (c.x + c.radius < -50 || c.collected) this.coins.splice(i, 1)
     }
+    return spawnedAt
   }
 
   spawnObstaclePattern(x: number, groundY: number, level: Level) {

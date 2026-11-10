@@ -96,10 +96,12 @@ const freshStatus = (): PowerupStatus => ({
 export class PowerupManager {
   tokens: PowerupToken[] = []
   active: PowerupStatus = freshStatus()
+  collectedCount = 0
 
   reset() {
     this.tokens = []
     this.active = freshStatus()
+    this.collectedCount = 0
   }
 
   spawnRandom(x: number, groundY: number) {
@@ -112,6 +114,7 @@ export class PowerupManager {
 
   collect(token: PowerupToken, particles?: ParticleSystem | null) {
     token.collected = true
+    this.collectedCount++
     audio.playPowerup()
     if (token.type.id === 'shield') this.active.shield = true
     else if (token.type.id === 'magnet') {

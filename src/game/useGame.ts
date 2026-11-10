@@ -160,7 +160,7 @@ export function useGame(): GameApi {
     storage.updateDailyChallenge('distance', Math.floor(e.score.distance))
     storage.updateDailyChallenge('coins', e.score.coins)
     storage.updateDailyChallenge('doubleJumps', e.player.totalDoubleJumps)
-    storage.updateDailyChallenge('powerups', e.powerupsUsedCount)
+    storage.updateDailyChallenge('powerups', e.powerups?.collectedCount ?? 0)
     checkAchievements({
       isFirstRun: true,
       distance: e.score.distance,
@@ -210,7 +210,9 @@ export function useGame(): GameApi {
       background.update(speed)
       player.update(dt, groundY, particles, powerups.active, speed)
       powerups.update(dt, speed)
-      obstacles.update(dt, time, speed, level, groundY, player, powerups.active.magnet)
+      const spawnedAt = obstacles.update(dt, time, speed, level, groundY, player, powerups.active.magnet)
+      // Not in the original (spawnRandom was never called): drop a token mid-gap after the obstacle.
+      if (spawnedAt !== null && Math.random() < level.powerupSpawnChance) powerups.spawnRandom(spawnedAt + 260, groundY)
       particles.update(dt)
       score.update(dt, speed, boosted)
       if (boosted && !e.hadSpeedBoost) {
