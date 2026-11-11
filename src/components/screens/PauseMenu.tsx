@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Home01Icon,
-  PauseIcon,
   PlayIcon,
   RotateLeft01Icon,
   VolumeHighIcon,
@@ -11,7 +10,7 @@ import {
 import { Button } from '#/components/ui/button'
 import { audio } from '#/game/audio'
 import { storage } from '#/game/storage'
-import { IconBadge, Overlay, PANEL } from './shared'
+import { Overlay, PANEL } from './shared'
 
 interface PauseMenuProps {
   onResume: () => void
@@ -40,21 +39,19 @@ export function PauseMenu({ onResume, onRestart, onMainMenu }: PauseMenuProps) {
         className={`${PANEL} max-w-sm items-center text-center`}
       >
         <div className="flex flex-col items-center gap-2">
-          <IconBadge icon={PauseIcon} />
-          <span className="kicker">Game paused</span>
+          <span className="kicker text-glacier">Game paused</span>
           <h2 id="pause-title" className="game-title text-4xl sm:text-5xl">
             Paused
           </h2>
-          <p className="text-sm text-slate-400">Catch your breath. The world will wait.</p>
         </div>
 
         <div className="flex flex-col gap-2 w-full">
           <Button variant="aurora" onClick={onResume} className="w-full">
             <HugeiconsIcon icon={PlayIcon} className="fill-current" aria-hidden />
-            Resume
+            Resume run
           </Button>
           <Button variant="frost" size="md" onClick={onRestart} className="w-full">
-            <HugeiconsIcon icon={RotateLeft01Icon} className="text-mint" aria-hidden />
+            <HugeiconsIcon icon={RotateLeft01Icon} className="text-aurora" aria-hidden />
             Restart run
           </Button>
           <Button variant="frost" size="md" onClick={toggleSound} className="w-full" aria-pressed={settings.soundEnabled}>
@@ -63,11 +60,11 @@ export function PauseMenu({ onResume, onRestart, onMainMenu }: PauseMenuProps) {
               className="text-glacier"
               aria-hidden
             />
-            {settings.soundEnabled ? 'Sound on' : 'Sound off'}
+            {settings.soundEnabled ? 'Sound: on' : 'Sound: off'}
           </Button>
-          <Button variant="frost" size="md" onClick={onMainMenu} className="w-full text-slate-300">
-            <HugeiconsIcon icon={Home01Icon} className="text-slate-400" aria-hidden />
-            Back to menu
+          <Button variant="frost" size="md" onClick={onMainMenu} className="w-full text-rose-300 hover:text-rose-200">
+            <HugeiconsIcon icon={Home01Icon} aria-hidden />
+            Quit to main menu
           </Button>
         </div>
 

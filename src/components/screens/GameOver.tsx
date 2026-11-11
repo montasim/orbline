@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
+  ChampionIcon,
   Home01Icon,
   MountainSnowIcon,
   RankingIcon,
@@ -28,9 +29,8 @@ interface GameOverProps {
 
 function Stat({ label, children }: { label: string; children: ReactNode }) {
   return (
-    // exception: px-2 (not the card's p-4) so three stats fit side by side at 375px
-    <div className="frost-chip rounded-2xl px-2 py-4 flex flex-col items-center gap-1">
-      <span className="text-xs font-bold text-slate-400">{label}</span>
+    <div className="frost-chip rounded-2xl px-2 py-3 flex flex-col items-center gap-1">
+      <span className="font-display text-xs font-extrabold uppercase tracking-widest text-slate-400">{label}</span>
       <span className="glow-num text-2xl leading-none">{children}</span>
     </div>
   )
@@ -66,17 +66,14 @@ export function GameOver({
               New best score!
             </Badge>
           )}
-          <span className="kicker">Run complete</span>
+          <span className="kicker text-rose-300">Run ended</span>
           <h1 id="gameover-title" className="game-title text-4xl sm:text-5xl">
             Run over
           </h1>
-          <p className="text-sm text-slate-400 flex items-center gap-2">
-            <HugeiconsIcon icon={MountainSnowIcon} className="size-4 text-glacier" aria-hidden />
-            You made it to <span className="font-bold text-ice">{scoreData.levelTitle}</span>
-          </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 w-full">
+        {/* 2×2 stat grid, each value in its own colour */}
+        <div className="grid grid-cols-2 gap-2 w-full">
           <Stat label="Distance">
             <span className="inline-flex items-baseline gap-1 text-glacier">
               {scoreData.distance}
@@ -86,23 +83,23 @@ export function GameOver({
           <Stat label="Crystals">
             <Crystals amount={scoreData.coins} />
           </Stat>
-          <Stat label="Score">
+          <Stat label="Total score">
             <span className="text-mint">{scoreData.score}</span>
+          </Stat>
+          <Stat label="Level reached">
+            <span className="inline-flex items-center gap-1 text-amber-300" title={scoreData.levelTitle}>
+              <HugeiconsIcon icon={MountainSnowIcon} className="size-5" aria-hidden />
+              Lv {scoreData.level}
+            </span>
           </Stat>
         </div>
 
         <div className={`${ROW} w-full flex items-center justify-between gap-3 text-sm`}>
-          <span className="text-slate-300">
-            Level {scoreData.level} · <span className="text-slate-400">{scoreData.levelName}</span>
-          </span>
           <span className="flex items-center gap-2 text-slate-300">
-            <HugeiconsIcon icon={StarIcon} className="size-4 text-mint" aria-hidden />
-            {/* label and number differ in font and size: share a baseline so they read as one line */}
-            <span className="flex items-baseline gap-1 leading-none">
-              Best
-              <span className="glow-num text-ice text-base leading-none">{scoreData.bestScore}</span>
-            </span>
+            <HugeiconsIcon icon={ChampionIcon} className="size-4 text-amber-300" aria-hidden />
+            All-time best
           </span>
+          <span className="glow-num text-amber-300 text-base leading-none">{scoreData.bestScore}</span>
         </div>
 
         <RankPanel onlineRun={onlineRun} onOpenSettings={click(onOpenSettings)} onOpenRanks={click(onOpenRanks)} />

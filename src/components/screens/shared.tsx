@@ -68,8 +68,8 @@ interface DialogShellProps {
   icon: IconSvgElement
   title: string
   subtitle?: ReactNode
-  /** uppercase accent label above the title, e.g. "Customize" */
-  kicker?: string
+  /** colour of the header tile: every dialog has its own (see TONES) */
+  tone?: Tone
   onClose: () => void
   /** Right side of the header, e.g. the crystal balance. */
   aside?: ReactNode
@@ -78,7 +78,7 @@ interface DialogShellProps {
 }
 
 /** Frosted modal used by Orbs, Daily, Trophies, Ranks, Settings and Regions. */
-export function DialogShell({ icon, title, subtitle, kicker, onClose, aside, className = 'max-w-md', children }: DialogShellProps) {
+export function DialogShell({ icon, title, subtitle, tone = 'mint', onClose, aside, className = 'max-w-md', children }: DialogShellProps) {
   const titleId = useId()
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -96,16 +96,15 @@ export function DialogShell({ icon, title, subtitle, kicker, onClose, aside, cla
         className={cn(PANEL, className)}
       >
         <header className="flex items-center gap-3">
-          <IconBadge icon={icon} />
+          <IconBadge icon={icon} tone={tone} />
           <div className="min-w-0 flex-1 flex flex-col gap-1">
-            {kicker && <span className="kicker">{kicker}</span>}
-            <h2 id={titleId} className="game-title text-xl leading-tight">
+            <h2 id={titleId} className="game-title normal-case tracking-normal text-xl sm:text-2xl leading-tight">
               {title}
             </h2>
             {subtitle && <p className="text-sm text-slate-400">{subtitle}</p>}
           </div>
           {aside}
-          <Button variant="frost" size="icon" aria-label="Close" onClick={onClose} className="text-slate-300 hover:text-ice">
+          <Button variant="frost" size="icon" aria-label="Close" onClick={onClose} className="rounded-xl text-slate-300 hover:text-ice">
             <HugeiconsIcon icon={Cancel01Icon} aria-hidden />
           </Button>
         </header>
@@ -128,12 +127,32 @@ export function Overlay({ className, children }: { className?: string; children:
   )
 }
 
-/** Header badge for dialogs and screens. */
-export function IconBadge({ icon }: { icon: IconSvgElement }) {
+/** Vivid tints for header tiles, row tiles and reward chips. */
+export const TONES = {
+  mint: 'bg-mint/15 text-mint ring-mint/40',
+  glacier: 'bg-glacier/15 text-glacier ring-glacier/40',
+  aurora: 'bg-aurora/15 text-aurora ring-aurora/40',
+  amber: 'bg-amber-400/15 text-amber-300 ring-amber-300/40',
+  crystal: 'bg-crystal/15 text-crystal ring-crystal/40',
+}
+export type Tone = keyof typeof TONES
+
+/** Header badge for dialogs and screens: a tinted tile in the dialog's own colour. */
+export function IconBadge({ icon, tone = 'mint' }: { icon: IconSvgElement; tone?: Tone }) {
   return (
-    <div className="size-12 shrink-0 rounded-2xl frost-chip flex items-center justify-center text-mint">
+    <div className={cn('size-12 shrink-0 rounded-2xl ring-1 flex items-center justify-center', TONES[tone])}>
       <HugeiconsIcon icon={icon} className="size-6" aria-hidden />
     </div>
+  )
+}
+
+/** Amber "+N" crystal reward pill (Daily, Trophies). */
+export function RewardChip({ amount }: { amount: number }) {
+  return (
+    <span className="inline-flex items-center gap-1 h-7 px-2 rounded-full ring-1 bg-amber-400/15 text-amber-300 ring-amber-300/40 glow-num text-sm shrink-0">
+      <HugeiconsIcon icon={SnowflakeIcon} className="size-4" aria-hidden />+{amount}
+      <span className="sr-only"> crystals</span>
+    </span>
   )
 }
 

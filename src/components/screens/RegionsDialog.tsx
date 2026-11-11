@@ -52,7 +52,7 @@ interface RegionsDialogProps {
 export function RegionsDialog({ selectedMap, onSelect, onClose }: RegionsDialogProps) {
   return (
     <DialogShell
-      kicker="Choose your world" icon={MapsIcon} title="Regions" subtitle="Choose the world for your next run" onClose={onClose} className="max-w-lg">
+      tone="glacier" icon={MapsIcon} title="Regions" subtitle="Choose the world for your next run" onClose={onClose} className="max-w-lg">
       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {MAPS.map((m) => {
           const active = m.id === selectedMap

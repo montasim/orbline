@@ -5,7 +5,7 @@ import { Progress } from '#/components/ui/progress'
 import { audio } from '#/game/audio'
 import { storage } from '#/game/storage'
 import { Button } from '#/components/ui/button'
-import { CARD, Chip, Crystals, DialogShell } from './shared'
+import { CARD, Crystals, DialogShell, RewardChip } from './shared'
 
 interface DailyChallengeDialogProps {
   onClose: () => void
@@ -31,17 +31,15 @@ export function DailyChallengeDialog({ onClose, onClaimReward }: DailyChallengeD
 
   return (
     <DialogShell
-      kicker="Daily challenge" icon={Calendar03Icon} title="Daily trek" subtitle="A new challenge every midnight" onClose={onClose}>
+      tone="aurora" icon={Calendar03Icon} title="Daily trek" subtitle="A new challenge every midnight" onClose={onClose}>
       <div className={`${CARD} flex flex-col gap-4`}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <span className="text-xs font-bold text-mint">Today&apos;s challenge</span>
-            <h3 className="game-title text-xl">{daily.title}</h3>
+            <span className="kicker text-aurora">Today&apos;s target</span>
+            <h3 className="font-display text-xl font-extrabold text-ice leading-tight">{daily.title}</h3>
             <p className="text-sm text-slate-300">{daily.desc}</p>
           </div>
-          <Chip>
-            <Crystals amount={`+${daily.reward}`} />
-          </Chip>
+          <RewardChip amount={daily.reward} />
         </div>
 
         <div className="flex flex-col gap-2">

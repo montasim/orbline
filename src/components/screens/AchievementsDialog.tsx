@@ -4,7 +4,7 @@ import { ChampionIcon, LockIcon } from '@hugeicons/core-free-icons'
 import { ACHIEVEMENTS } from '#/game/data'
 import { storage } from '#/game/storage'
 import { ICONS } from './icons'
-import { Crystals, DialogShell, Row } from './shared'
+import { DialogShell, RewardChip, Row } from './shared'
 
 export function AchievementsDialog({ onClose }: { onClose: () => void }) {
   const [unlocked] = useState(() => storage.getAchievements())
@@ -12,7 +12,7 @@ export function AchievementsDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <DialogShell
-      kicker="Progress"
+      tone="mint"
       icon={ChampionIcon}
       title="Trophies"
       subtitle={
@@ -42,7 +42,7 @@ export function AchievementsDialog({ onClose }: { onClose: () => void }) {
                 desc={a.desc}
               >
                 <span className={`text-sm shrink-0 ${isDone ? '' : 'text-slate-300'}`}>
-                  <Crystals amount={`+${a.reward}`} />
+                  <RewardChip amount={a.reward} />
                 </span>
               </Row>
             </li>

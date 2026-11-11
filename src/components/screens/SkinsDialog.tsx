@@ -45,7 +45,7 @@ export function SkinsDialog({ selectedSkin, onSelectSkin, onClose, showToast }: 
 
   return (
     <DialogShell
-      kicker="Customize"
+      tone="aurora"
       icon={OrbitIcon}
       title="Orbs"
       subtitle="Pick your runner's colourway"

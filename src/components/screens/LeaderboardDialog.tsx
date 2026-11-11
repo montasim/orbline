@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { RankingIcon } from '@hugeicons/core-free-icons'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Medal01Icon, RankingIcon } from '@hugeicons/core-free-icons'
 import { storage } from '#/game/storage'
 import { Button } from '#/components/ui/button'
 import { getLeaderboard } from '#/server/leaderboard'
 import { CARD, DialogShell, ROW } from './shared'
 
-const MEDALS = ['bg-mint text-ink', 'bg-glacier text-ink', 'bg-aurora text-ink']
+// gold, silver, bronze
+const MEDALS = ['bg-amber-400/15 text-amber-300 ring-amber-300/50', 'bg-slate-300/15 text-slate-200 ring-slate-300/50', 'bg-orange-400/15 text-orange-300 ring-orange-300/50']
+const COLS = 'grid grid-cols-[3rem_1fr_4.5rem_4rem] items-center gap-2'
 
 type Board = Awaited<ReturnType<typeof getLeaderboard>>
 
@@ -34,7 +37,7 @@ export function LeaderboardDialog({ onClose, onOpenSettings }: { onClose: () => 
 
   return (
     <DialogShell
-      kicker="Global leaderboard"
+      tone="amber"
       icon={RankingIcon}
       title="Ranks"
       subtitle={board ? `${board.totalPlayers} runners on the board` : 'The fastest runners in every world'}
@@ -58,19 +61,23 @@ export function LeaderboardDialog({ onClose, onOpenSettings }: { onClose: () => 
       )}
 
       {board && board.top.length > 0 && (
-        <ol className="flex flex-col gap-2">
-          {board.top.map((r) => (
-            <RankRow key={`${r.rank}-${r.name}`} {...r} />
-          ))}
-          {you?.rank && !youInTop && (
-            <>
-              <li aria-hidden className="text-center text-slate-500 leading-none">
-                ⋮
-              </li>
+        // a table, like a scoreboard: header row, then one divided row per runner
+        <div className="frost-chip rounded-2xl overflow-hidden">
+          <div aria-hidden className={`${COLS} px-4 py-2 bg-white/5 font-display text-xs font-extrabold uppercase tracking-widest text-slate-400`}>
+            <span>Rank</span>
+            <span>Runner</span>
+            <span className="text-right">Distance</span>
+            <span className="text-right">Score</span>
+          </div>
+          <ol className="divide-y divide-white/8">
+            {board.top.map((r) => (
+              <RankRow key={`${r.rank}-${r.name}`} {...r} />
+            ))}
+            {you?.rank && !youInTop && (
               <RankRow rank={you.rank} name={you.name} score={you.score} distance={you.distance} isYou />
-            </>
-          )}
-        </ol>
+            )}
+          </ol>
+        </div>
       )}
 
       {/* the name itself is chosen in Settings */}
@@ -94,19 +101,22 @@ export function LeaderboardDialog({ onClose, onOpenSettings }: { onClose: () => 
 }
 
 function RankRow({ rank, name, score, distance, isYou }: { rank: number; name: string; score: number; distance: number; isYou: boolean }) {
+  const medal = MEDALS[rank - 1]
   return (
-    <li className={`${ROW} flex items-center gap-3 ${isYou ? 'border-mint/50 bg-mint/10' : ''}`}>
-      <span
-        className={`min-w-8 h-8 px-2 shrink-0 rounded-full flex items-center justify-center font-display font-extrabold text-sm ${MEDALS[rank - 1] ?? 'bg-white/6 text-slate-300'}`}
-      >
-        {rank}
-      </span>
-      <span className="flex-1 min-w-0 truncate font-bold text-ice">
+    <li className={`${COLS} px-4 py-3 ${isYou ? 'bg-mint/10' : ''}`}>
+      {medal ? (
+        <span className={`size-8 rounded-full ring-1 flex items-center justify-center ${medal}`} aria-label={`Rank ${rank}`}>
+          <HugeiconsIcon icon={Medal01Icon} className="size-4" aria-hidden />
+        </span>
+      ) : (
+        <span className="font-display text-sm font-extrabold text-slate-400">#{rank}</span>
+      )}
+      <span className="min-w-0 truncate font-bold text-ice">
         {name}
-        {isYou && <span className="sr-only"> (you)</span>}
+        {isYou && <span className="text-xs font-bold text-mint"> · you</span>}
       </span>
-      <span className="text-sm text-slate-400 tabular-nums">{distance}m</span>
-      <span className="w-14 text-right glow-num text-mint">{score}</span>
+      <span className="text-right text-sm text-slate-400 tabular-nums">{distance}m</span>
+      <span className="text-right glow-num text-amber-300">{score}</span>
     </li>
   )
 }

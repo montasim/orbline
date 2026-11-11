@@ -14,7 +14,7 @@ import { audio } from '#/game/audio'
 import type { Settings } from '#/game/data'
 import { storage } from '#/game/storage'
 import { PlayerNameCard } from './NameForm'
-import { CARD, DialogShell, Row } from './shared'
+import { CARD, DialogShell, Row, TONES } from './shared'
 
 const toggle =
   'hit-area w-12! h-7! p-1 border-0 shadow-none data-[state=checked]:bg-lagoon data-[state=unchecked]:bg-white/15 *:size-5! *:bg-white! *:data-[state=checked]:translate-x-5!'
@@ -29,13 +29,14 @@ export function SettingsDialog({ onClose, onNameSaved }: { onClose: () => void; 
 
   return (
     <DialogShell
-      kicker="Options" icon={Settings02Icon} title="Settings" subtitle="Name, sound, effects and controls" onClose={onClose}>
+      tone="glacier" icon={Settings02Icon} title="Settings" subtitle="Name, sound, effects and controls" onClose={onClose}>
       <div className="flex flex-col gap-2">
         <PlayerNameCard onSaved={onNameSaved} />
         <Row
           title="Sound effects"
           desc="Jumps, crystals and power-ups"
           icon={settings.soundEnabled ? VolumeHighIcon : VolumeMute02Icon}
+          tileClassName={`ring-1 ${TONES.aurora}`}
         >
           <Switch
             aria-label="Sound effects"
@@ -47,7 +48,7 @@ export function SettingsDialog({ onClose, onNameSaved }: { onClose: () => void; 
             }}
           />
         </Row>
-        <Row title="Nature sounds" desc="Wind, rain and rumbles of each world" icon={FastWindIcon}>
+        <Row title="Nature sounds" desc="Wind, rain and rumbles of each world" icon={FastWindIcon} tileClassName={`ring-1 ${TONES.mint}`}>
           <Switch
             aria-label="Nature sounds"
             className={toggle}
@@ -58,7 +59,7 @@ export function SettingsDialog({ onClose, onNameSaved }: { onClose: () => void; 
             }}
           />
         </Row>
-        <Row title="Snow and sparkles" desc="Particle detail" icon={SnowIcon}>
+        <Row title="Snow and sparkles" desc="Particle detail" icon={SnowIcon} tileClassName={`ring-1 ${TONES.amber}`}>
           <Button
             variant="frost"
             size="chip"

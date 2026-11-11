@@ -32,7 +32,7 @@ interface HudProps {
 // large touch controls keep their own round shape; spacing, type and icons follow DESIGN.md.
 // Touch screens only: with a mouse/keyboard they would just cover the track.
 const touchBtn =
-  'pointer-fine:hidden frost-chip frost-glow size-20 sm:size-24 rounded-full flex flex-col items-center justify-center gap-1 text-sm font-bold active:scale-90 shrink-0 touch-none'
+  'pointer-fine:hidden frost-chip frost-glow size-20 sm:size-24 rounded-3xl flex flex-col items-center justify-center gap-1 text-sm font-bold active:scale-90 shrink-0 touch-none'
 
 // slate-300, not 400: these sit on glass over bright worlds too (Bloom Meadow's sky)
 const label = 'font-display text-xs font-extrabold uppercase tracking-wider min-[400px]:tracking-widest text-slate-300 leading-none'
@@ -128,13 +128,14 @@ export function Hud({ scoreData, powerupStatus: p, onPause, onJump, onSlide, onS
             aria-label={muted ? 'Turn sound on (M)' : 'Turn sound off (M)'}
             title={muted ? 'Sound off (M)' : 'Sound on (M)'}
             // under 360px the stats need the room; Pause has the same sound toggle
-            className="max-[359px]:hidden"
+            className="rounded-xl max-[359px]:hidden"
           >
             <HugeiconsIcon icon={muted ? VolumeMute02Icon : VolumeHighIcon} className="text-glacier" aria-hidden />
           </Button>
           <Button
             variant="frost"
             size="icon"
+            className="rounded-xl"
             onClick={(e) => {
               e.stopPropagation()
               onPause()
