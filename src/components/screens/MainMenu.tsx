@@ -8,6 +8,7 @@ import {
   OrbitIcon,
   RotateClockwiseIcon,
   Settings02Icon,
+  SnowflakeIcon,
 } from '@hugeicons/core-free-icons'
 import { audio } from '#/game/audio'
 import { mapById } from '#/game/maps'
@@ -15,7 +16,7 @@ import { storage } from '#/game/storage'
 import { Button } from '#/components/ui/button'
 import { OrblineLogo } from './Logo'
 import { MapPreview } from './RegionsDialog'
-import { Crystals } from './shared'
+
 
 interface MainMenuProps {
   onStart: () => void
@@ -37,8 +38,10 @@ const dockBtn =
 // exception: 10px labels (like the reference dock) so TROPHIES and SETTINGS never touch on 320px phones
 const dockLabel = 'font-display text-[0.625rem] font-bold uppercase tracking-wide leading-none'
 // top-right stat tiles: a micro label over a glowing value
-const tile = 'frost-panel rounded-2xl px-3 py-2 flex flex-col items-center gap-1 min-w-16'
-const tileLabel = 'font-display font-extrabold uppercase tracking-widest text-slate-300 leading-none'
+const tile = 'frost-panel rounded-2xl p-2 pr-3 flex items-center gap-2'
+const tileLabel = 'font-display text-xs font-extrabold uppercase tracking-widest leading-none'
+// vivid icon box beside each stat; phones drop it to keep the top bar on one line
+const tileIcon = 'size-8 rounded-lg flex items-center justify-center shrink-0 max-sm:hidden'
 
 export function MainMenu({
   onStart,
@@ -116,12 +119,25 @@ export function MainMenu({
             </Button>
           )}
           <div className={tile} title="Best score">
-            <span className={tileLabel}>Best</span>
-            <span className="glow-num text-base text-mint leading-none">{best}</span>
+            <span className={`${tileIcon} bg-amber-400/15 text-amber-300 ring-1 ring-amber-300/30`}>
+              <HugeiconsIcon icon={ChampionIcon} className="size-5" aria-hidden />
+            </span>
+            <span className="flex flex-col gap-1">
+              <span className={`${tileLabel} text-amber-300`}>Best</span>
+              <span className="glow-num text-base text-ice leading-none">{best}</span>
+            </span>
           </div>
           <div className={`${tile} max-[359px]:hidden`} title="Crystals">
-            <span className={tileLabel}>Crystals</span>
-            <Crystals amount={crystals} className="text-base leading-none" />
+            <span className={`${tileIcon} bg-crystal/15 text-crystal ring-1 ring-crystal/30`}>
+              <HugeiconsIcon icon={SnowflakeIcon} className="size-5" aria-hidden />
+            </span>
+            <span className="flex flex-col gap-1">
+              <span className={`${tileLabel} text-crystal`}>Crystals</span>
+              <span className="glow-num text-base text-ice leading-none">
+                {crystals}
+                <span className="sr-only"> crystals</span>
+              </span>
+            </span>
           </div>
         </div>
       </div>
