@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
+  FavouriteIcon,
   KeyboardIcon,
+  LinkSquare02Icon,
   FastWindIcon,
   Settings02Icon,
   SnowIcon,
@@ -80,6 +82,31 @@ export function SettingsDialog({ onClose, onNameSaved }: { onClose: () => void; 
         {/* keyboard controls with a mouse; touch controls on touch screens */}
         <ControlList className="pointer-coarse:hidden" items={KEYS} />
         <ControlList className="hidden pointer-coarse:grid" items={TOUCH} />
+      </div>
+
+      {/* credits: the developer and a way to support the game (both open in a new tab) */}
+      <div className={`${CARD} flex items-center justify-between gap-3`}>
+        <div className="min-w-0 flex flex-col gap-1">
+          <span className="kicker">Made by</span>
+          <a
+            href="https://montasim.dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hit-area inline-flex items-center gap-1 font-display text-base font-bold text-ice hover:text-mint transition"
+          >
+            Montasim
+            <HugeiconsIcon icon={LinkSquare02Icon} className="size-4 text-slate-400" aria-hidden />
+            <span className="sr-only"> (montasim.dev, opens in a new tab)</span>
+          </a>
+          <span className="text-xs text-slate-400">montasim.dev</span>
+        </div>
+        <Button asChild variant="frost" size="chip" className="text-aurora shrink-0">
+          <a href="https://www.supportkori.com/montasim" target="_blank" rel="noopener noreferrer">
+            <HugeiconsIcon icon={FavouriteIcon} className="fill-current" aria-hidden />
+            Support
+            <span className="sr-only"> the developer (opens in a new tab)</span>
+          </a>
+        </Button>
       </div>
     </DialogShell>
   )
