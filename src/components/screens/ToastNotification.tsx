@@ -10,9 +10,9 @@ export function ToastNotification({ toast, inRun }: { toast: Toast; inRun: boole
     <aside
       aria-live="polite"
       className={cn(
-        // in a run: just above the action (--toast-top, set from the ground line), never under the HUD
+        // in a run: top centre, just under the HUD rows; elsewhere at the very top, clear of centred cards
         inRun
-          ? 'top-[max(calc(9rem+env(safe-area-inset-top)),var(--toast-top,40%))]'
+          ? 'top-[calc(9rem+env(safe-area-inset-top))]'
           : 'top-[calc(1rem+env(safe-area-inset-top))]',
         // solid backing: a see-through pop-up got lost over bright worlds
         'bg-night/90',

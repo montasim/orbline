@@ -485,9 +485,6 @@ export function useGame(): GameApi {
       const { w: width, h: height, groundY } = view
       const e = engine.current
       e.view = { w: width, h: height, scale: view.scale }
-      // pop-ups sit just above the action: 200 units (a jump's height) over the ground, minus the pop-up itself
-      const cssPerUnit = Math.max(1, window.innerWidth) / width
-      document.documentElement.style.setProperty('--toast-top', `${Math.round((groundY - 200) * cssPerUnit - 64)}px`)
       const prevGroundY = e.groundY || groundY
       const deltaY = groundY - prevGroundY
       e.groundY = groundY
