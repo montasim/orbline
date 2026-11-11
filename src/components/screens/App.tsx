@@ -37,7 +37,6 @@ export function App() {
         <MainMenu
           onOpenRegions={() => setDialog('REGIONS')}
           selectedMap={game.selectedMap}
-          onChangeMap={game.changeMap}
           onStart={game.startGame}
           onOpenSkins={() => setDialog('SKINS')}
           onOpenDaily={() => setDialog('DAILY')}
