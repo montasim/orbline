@@ -30,7 +30,7 @@ export function App() {
         gameState={game.gameState}
       />
 
-      {game.toastNotification && <ToastNotification toast={game.toastNotification} inRun={game.gameState === 'PLAYING'} />}
+      {game.toastNotification && <ToastNotification key={`${game.toastNotification.title}|${game.toastNotification.message}`} toast={game.toastNotification} inRun={game.gameState === 'PLAYING'} />}
 
       {/* title screen steps aside while a dialog is open, leaving just the scene behind it */}
       {game.gameState === 'MENU' && !dialog && (
@@ -45,7 +45,6 @@ export function App() {
           onOpenLeaderboard={() => setDialog('LEADERBOARD')}
           onOpenSettings={() => setDialog('SETTINGS')}
           isPortrait={game.isPortrait}
-          onRotate={game.requestLandscapeMode}
         />
       )}
       {game.gameState === 'PLAYING' && (
@@ -58,7 +57,6 @@ export function App() {
           onStopSlide={game.triggerStopSlide}
           showToast={game.showToast}
           isPortrait={game.isPortrait}
-          onRotate={game.requestLandscapeMode}
         />
       )}
       {game.gameState === 'PAUSED' && (

@@ -10,9 +10,12 @@ export function ToastNotification({ toast, inRun }: { toast: Toast; inRun: boole
     <aside
       aria-live="polite"
       className={cn(
+        // in a run: just above the action (--toast-top, set from the ground line), never under the HUD
         inRun
-          ? 'portrait:top-[38%] landscape:top-[calc(8.5rem+env(safe-area-inset-top))] short:landscape:top-[calc(5.5rem+env(safe-area-inset-top))]'
+          ? 'top-[max(calc(8rem+env(safe-area-inset-top)),var(--toast-top,40%))]'
           : 'top-[calc(1rem+env(safe-area-inset-top))]',
+        // solid backing: a see-through pop-up got lost over bright worlds
+        'bg-night/90',
         'fixed left-1/2 z-50 -translate-x-1/2 frost-panel frost-glow rounded-full pl-2 pr-4 py-2 flex items-center gap-3 max-w-[calc(100vw-2rem)] animate-toast-in',
       )}
     >

@@ -143,10 +143,26 @@ export function useGame(): GameApi {
     setScoreData((d) => ({ ...d, bestScore: storage.getBestScore() }))
   }, [])
 
-  const showToast = useCallback((title: string, message: string, icon: IconName = 'Award') => {
-    setToastNotification({ title, message, icon })
-    setTimeout(() => setToastNotification(null), 3800)
+  // one pop-up at a time: later ones wait their turn instead of replacing what's on screen
+  const toastQueue = useRef<Toast[]>([])
+  const toastShowing = useRef(false)
+  const nextToast = useCallback(() => {
+    const t = toastQueue.current.shift()
+    toastShowing.current = !!t
+    setToastNotification(t ?? null)
+    if (t) setTimeout(nextToast, 3000)
   }, [])
+  const showToast = useCallback(
+    (title: string, message: string, icon: IconName = 'Award') => {
+      const q = toastQueue.current
+      const last = q.at(-1)
+      if (last?.title === title && last.message === message) return // e.g. sound toggled repeatedly
+      q.push({ title, message, icon })
+      if (q.length > 3) q.shift() // stale news is dropped, not shown late
+      if (!toastShowing.current) nextToast()
+    },
+    [nextToast],
+  )
 
   const checkAchievements = useCallback(
     (stats: RunStats) => {
@@ -296,6 +312,7 @@ export function useGame(): GameApi {
           const a = storage.unlockAchievement('shield_savior')
           if (a) showToast('Trophy unlocked', a.title, 'Trophy')
         },
+        onPowerupCollected: (def) => showToast(def.name, def.desc, def.icon),
       })
 
       ctx.setTransform(e.view.scale, 0, 0, e.view.scale, 0, 0)
@@ -468,6 +485,9 @@ export function useGame(): GameApi {
       const { w: width, h: height, groundY } = view
       const e = engine.current
       e.view = { w: width, h: height, scale: view.scale }
+      // pop-ups sit just above the action: 200 units (a jump's height) over the ground, minus the pop-up itself
+      const cssPerUnit = Math.max(1, window.innerWidth) / width
+      document.documentElement.style.setProperty('--toast-top', `${Math.round((groundY - 200) * cssPerUnit - 64)}px`)
       const prevGroundY = e.groundY || groundY
       const deltaY = groundY - prevGroundY
       e.groundY = groundY

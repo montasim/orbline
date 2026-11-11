@@ -212,6 +212,7 @@ export type IconName =
   | 'Crown'
   | 'Wind'
   | 'Magnet'
+  | 'Rotate'
 
 /** ids are referenced by engine logic; names/colours are presentation. */
 export const POWERUPS = {

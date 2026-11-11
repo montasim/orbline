@@ -8,6 +8,7 @@ import {
   FootprintsIcon,
   MagnetIcon,
   OrbitIcon,
+  RotateClockwiseIcon,
   Shield01Icon,
   SnowflakeIcon,
   SparklesIcon,
@@ -28,6 +29,7 @@ export const ICONS: Record<IconName, IconSvgElement> = {
   Crown: CrownIcon,
   Wind: FastWindIcon,
   Magnet: MagnetIcon,
+  Rotate: RotateClockwiseIcon,
 }
 
 export const DEFAULT_ICON = SparklesIcon

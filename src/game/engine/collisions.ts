@@ -2,6 +2,7 @@ import { audio } from '../audio'
 import type { ObstacleManager } from './obstacles'
 import type { ParticleSystem } from './particles'
 import type { Player } from './player'
+import type { PowerupDef } from '../data'
 import type { PowerupManager } from './powerups'
 
 export interface Hitbox {
@@ -23,6 +24,7 @@ interface CollisionContext {
   onGameOver?: () => void
   onCoinCollected?: () => void
   onShieldSaved?: () => void
+  onPowerupCollected?: (def: PowerupDef) => void
 }
 
 /** Coin pickup, power-up pickup, then obstacle hits (speed boost smashes, shield absorbs, else game over). */
@@ -34,6 +36,7 @@ export function resolveCollisions({
   onGameOver,
   onCoinCollected,
   onShieldSaved,
+  onPowerupCollected,
 }: CollisionContext) {
   const hitbox = player.getHitbox()
   const active = powerupManager.active
@@ -45,7 +48,9 @@ export function resolveCollisions({
     onCoinCollected?.()
   }
   for (const token of powerupManager.tokens) {
-    if (!token.collected && intersects(hitbox, token.getHitbox())) powerupManager.collect(token, particleSystem)
+    if (token.collected || !intersects(hitbox, token.getHitbox())) continue
+    powerupManager.collect(token, particleSystem)
+    onPowerupCollected?.(token.type)
   }
   if (player.invulnerableTimer > 0) return
   const obstacles = obstacleManager.obstacles
