@@ -37,12 +37,30 @@ class GameAudio {
   init() {
     if (typeof window === 'undefined') return
     if (!this.ctx) {
+      // iPhone: 'playback' keeps game sound on even with the ring/silent switch set to silent (Safari 16.4+)
+      const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession
+      if (session) session.type = 'playback'
       const Ctor: AudioCtor | undefined =
         window.AudioContext ||
         (window as unknown as { webkitAudioContext?: AudioCtor }).webkitAudioContext
       if (Ctor) this.ctx = new Ctor()
     }
-    if (this.ctx && this.ctx.state === 'suspended') void this.ctx.resume()
+    // iOS parks the context as 'interrupted' (calls, Siri, app switch), not only 'suspended'
+    if (this.ctx && this.ctx.state !== 'running') void this.ctx.resume().catch(() => {})
+  }
+
+  /**
+   * iOS only lets audio start or resume inside a user gesture, so every tap/key wakes it.
+   * Without this, sound stays off after an interruption until the page is reloaded.
+   */
+  unlockOnGesture() {
+    if (typeof window === 'undefined') return () => {}
+    const wake = () => this.init()
+    const events = ['pointerup', 'touchend', 'keydown'] as const
+    for (const ev of events) window.addEventListener(ev, wake, { capture: true, passive: true })
+    return () => {
+      for (const ev of events) window.removeEventListener(ev, wake, { capture: true })
+    }
   }
 
   setSoundEnabled(enabled: boolean) {

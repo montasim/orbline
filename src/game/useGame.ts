@@ -141,6 +141,7 @@ export function useGame(): GameApi {
     const previewMap = import.meta.env.DEV ? new URLSearchParams(window.location.search).get('map') : null
     setSelectedMap(previewMap ?? storage.getSelectedMap())
     setScoreData((d) => ({ ...d, bestScore: storage.getBestScore() }))
+    return audio.unlockOnGesture()
   }, [])
 
   // one pop-up at a time: later ones wait their turn instead of replacing what's on screen
