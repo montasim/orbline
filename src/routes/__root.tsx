@@ -20,10 +20,17 @@ export const Route = createRootRoute({
           'Orbline: roll a glowing orb along the line through five endless worlds, from the aurora glacier to a lava caldera. Jump, slide, gather crystals and unlock new orbs.',
       },
       { name: 'theme-color', content: '#050b1a' },
+      // installable app (PWA): iOS reads these instead of the manifest
+      { name: 'mobile-web-app-capable', content: 'yes' },
+      { name: 'apple-mobile-web-app-capable', content: 'yes' },
+      { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+      { name: 'apple-mobile-web-app-title', content: 'Orbline' },
       { title: 'Orbline — Five-World Orb Runner' },
     ],
     links: [
       { rel: 'icon', type: 'image/svg+xml', href: FAVICON },
+      { rel: 'manifest', href: '/manifest.webmanifest' },
+      { rel: 'apple-touch-icon', href: '/icons/apple-touch-icon.png' },
       { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
       { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
       { rel: 'stylesheet', href: appCss },

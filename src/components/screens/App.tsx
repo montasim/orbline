@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { GameCanvas } from '#/components/game/GameCanvas'
 import { useGame } from '#/game/useGame'
 import { AchievementsDialog } from './AchievementsDialog'
@@ -19,6 +19,10 @@ export function App() {
   const game = useGame()
   const [dialog, setDialog] = useState<Dialog | null>(null)
   const close = () => setDialog(null)
+  // installable app: the service worker lets it open offline (production only, so dev never serves stale files)
+  useEffect(() => {
+    if (import.meta.env.PROD && 'serviceWorker' in navigator) void navigator.serviceWorker.register('/sw.js').catch(() => {})
+  }, [])
 
   return (
     <main className="relative w-full h-full min-h-[100dvh] overflow-hidden bg-night select-none font-sans text-ice">
