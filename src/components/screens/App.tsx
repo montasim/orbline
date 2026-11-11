@@ -45,6 +45,7 @@ export function App() {
           onOpenLeaderboard={() => setDialog('LEADERBOARD')}
           onOpenSettings={() => setDialog('SETTINGS')}
           isPortrait={game.isPortrait}
+          onRotate={game.requestLandscapeMode}
         />
       )}
       {game.gameState === 'PLAYING' && (

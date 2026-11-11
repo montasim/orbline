@@ -264,7 +264,8 @@ export function useGame(): GameApi {
           e.background.update(idleSpeed)
           e.player.update(dt, e.groundY, null, {}, idleSpeed)
           e.background.draw(ctx, tierOf(e.score))
-          e.player.draw(ctx, e.powerups ? e.powerups.active : {})
+          // landscape phones: the title's two columns fill the ground line, so the orb would sit behind Play
+          if (window.innerHeight > 520) e.player.draw(ctx, e.powerups ? e.powerups.active : {})
         }
         return
       }
