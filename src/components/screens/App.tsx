@@ -30,7 +30,7 @@ export function App() {
         gameState={game.gameState}
       />
 
-      {game.toastNotification && <ToastNotification toast={game.toastNotification} />}
+      {game.toastNotification && <ToastNotification toast={game.toastNotification} inRun={game.gameState === 'PLAYING'} />}
 
       {/* title screen steps aside while a dialog is open, leaving just the scene behind it */}
       {game.gameState === 'MENU' && !dialog && (
