@@ -2,7 +2,7 @@
 // - pages: network first, falling back to the last cached copy of the game
 // - built assets, icons and fonts: cache first (their URLs are content-hashed or never change)
 // - server functions (leaderboard, runs) are never cached: they must hit the server or fail honestly
-const VERSION = 'orbline-v1'
+const VERSION = 'orbline-v2'
 const SHELL = ['/', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png']
 
 self.addEventListener('install', (event) => {

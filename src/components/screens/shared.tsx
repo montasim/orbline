@@ -121,7 +121,7 @@ export const PANEL =
 /** Dimmed, centred backdrop for dialogs; screen-edge padding per DESIGN.md. */
 export function Overlay({ className, children }: { className?: string; children: ReactNode }) {
   return (
-    <div className={cn('absolute inset-0 z-30 flex items-center justify-center p-4 sm:p-6 night-scrim animate-fade-in select-none', className)}>
+    <div className={cn('absolute inset-0 z-30 flex items-center justify-center safe-pad night-scrim animate-fade-in select-none', className)}>
       {children}
     </div>
   )

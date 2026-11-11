@@ -24,8 +24,9 @@ export function App() {
     if (import.meta.env.PROD && 'serviceWorker' in navigator) void navigator.serviceWorker.register('/sw.js').catch(() => {})
   }, [])
 
+  // fixed to the visible viewport the canvas measures; 100dvh could run under Android system bars
   return (
-    <main className="relative w-full h-full min-h-[100dvh] overflow-hidden bg-night select-none font-sans text-ice">
+    <main className="fixed inset-0 overflow-hidden bg-night select-none font-sans text-ice">
       <GameCanvas
         canvasRef={game.canvasRef}
         onJump={game.triggerJump}

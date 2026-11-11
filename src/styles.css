@@ -4,6 +4,19 @@
 
 @import 'tw-animate-css';
 
+/*
+ * Screen-edge gutter for UI layers (HUD, title screen, dialogs): 16px, 24px from sm, but never less than the
+ * device safe area (notches, rounded corners, Android gesture bar, iOS home indicator). The canvas stays full-bleed.
+ */
+@utility safe-pad {
+  --gutter: 1rem;
+  padding: max(var(--gutter), env(safe-area-inset-top)) max(var(--gutter), env(safe-area-inset-right))
+    max(var(--gutter), env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
+  @media (width >= 40rem) {
+    --gutter: 1.5rem;
+  }
+}
+
 /* Enlarges a small control's tap target to ~44px without changing its layout (switches, text links). */
 @utility hit-area {
   position: relative;
@@ -114,8 +127,6 @@
     color: var(--nd-ice);
     background-color: var(--nd-night);
     font-family: var(--font-sans);
-    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
-      env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

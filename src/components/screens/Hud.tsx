@@ -89,7 +89,7 @@ export function Hud({ scoreData, powerupStatus: p, onPause, onJump, onSlide, onS
   }
 
   return (
-    <div className="absolute inset-0 pointer-events-none flex flex-col justify-between gap-2 p-4 sm:p-6 z-10 select-none">
+    <div className="absolute inset-0 pointer-events-none flex flex-col justify-between gap-2 safe-pad z-10 select-none">
       {/* one row on every screen: all run stats in a single panel left, the two controls right */}
       <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
         {/* exception: py-2, gap-2 and text-base numbers under 400px keep the row clear of the buttons on small phones */}

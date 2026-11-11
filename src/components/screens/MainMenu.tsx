@@ -82,7 +82,7 @@ export function MainMenu({
   ]
 
   return (
-    <div className="absolute inset-0 z-20 flex flex-col justify-between gap-4 p-4 sm:p-6 short:gap-2 select-none overflow-y-auto pb-[max(16px,env(safe-area-inset-bottom))]">
+    <div className="absolute inset-0 z-20 flex flex-col justify-between gap-4 safe-pad short:gap-2 select-none overflow-y-auto">
       {/* top bar: the world badge on the left (opens all worlds); stat tiles on the right */}
       <div className="flex items-start justify-between w-full gap-2">
         <button

@@ -47,6 +47,16 @@ const MIN_VIEW_WIDTH = 760
 /** Height kept clear for the on-screen Jump/Slide buttons on touch devices (button + HUD padding, CSS px). */
 const touchControlsReserve = (cssW: number) => (cssW >= 640 ? 128 : 100)
 
+/** Bottom safe-area inset in CSS px (home indicator, Android gesture bar); the HUD's safe-pad lifts the buttons by it. */
+function safeAreaBottom() {
+  const probe = document.createElement('div')
+  probe.style.cssText = 'position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom,0px)'
+  document.body.appendChild(probe)
+  const px = Number.parseFloat(getComputedStyle(probe).paddingBottom) || 0
+  probe.remove()
+  return px
+}
+
 /**
  * Three sizes, kept apart: CSS px (layout), logical units (what the game simulates and scenes draw in)
  * and backing pixels (CSS × device pixel ratio, so phones and tablets render sharp).
@@ -60,7 +70,7 @@ function measureView() {
   // shortcut: backing store capped at 2× and ~4 MP so big screens stay fast; raise if perf allows
   const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(4_000_000 / (cssW * cssH))))
   const margin = portrait ? clamp(cssH * 0.24, 90, 145) : clamp(cssH * 0.18, 55, 85)
-  const groundMargin = touch ? Math.max(margin, touchControlsReserve(cssW)) : margin
+  const groundMargin = touch ? Math.max(margin, touchControlsReserve(cssW) + safeAreaBottom()) : margin
   // keep the runner clear of the Slide button on touch screens
   const playerX = Math.max(touch ? 100 : 50, Math.min(140, cssW * (portrait ? 0.18 : 0.14)))
   return {
