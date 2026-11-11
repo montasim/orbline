@@ -20,7 +20,7 @@ export function ToastNotification({ toast, inRun }: { toast: Toast; inRun: boole
         <HugeiconsIcon icon={ICONS[toast.icon] ?? DEFAULT_ICON} className="size-5" aria-hidden />
       </div>
       <div className="flex flex-col gap-1 text-left min-w-0">
-        <span className="kicker leading-tight">{toast.title}</span>
+        <span className="kicker leading-tight whitespace-nowrap">{toast.title}</span>
         <span className="font-display text-sm font-bold text-ice truncate">{toast.message}</span>
       </div>
     </aside>
