@@ -47,7 +47,7 @@ const stop = (e: MouseEvent) => e.stopPropagation()
 function PowerupPill({ def, icon, value, text }: { def: PowerupDef; icon: IconSvgElement; value?: number; text?: string }) {
   return (
     <Chip
-      className="pl-1 pr-3 short:pr-1 animate-pop-in"
+      className="pl-1 pr-3 short:pr-1 animate-pop-in pointer-coarse:h-11"
       style={{ borderColor: `${def.color}66`, boxShadow: `0 0 18px -6px ${def.glowColor}` }}
     >
       <span
@@ -118,7 +118,7 @@ export function Hud({
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between gap-2 p-4 sm:p-6 z-10 select-none">
       {/* one row on every screen: all run stats in a single panel left, the two controls right */}
-      <div className="flex items-start justify-between gap-2 sm:gap-4 w-full">
+      <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
         {/* exception: py-2, gap-2 and text-base numbers under 400px keep the row clear of the buttons on small phones */}
         <div className="frost-chip rounded-2xl px-3 py-2 sm:px-4 flex items-center gap-2 min-[400px]:gap-3 sm:gap-4 min-w-0">
           <div className="flex flex-col gap-1">
@@ -173,15 +173,15 @@ export function Hud({
       </div>
 
       {/* tucked under the top bar in one row, so the lane ahead stays clear */}
-      <div className="flex flex-wrap justify-center items-center gap-2 self-center mb-auto pointer-events-auto">
-        <Chip className="pl-2" title={scoreData.levelName}>
+      <div className="flex flex-wrap items-center gap-2 self-start mb-auto pointer-events-auto">
+        <Chip className="pl-2 pointer-coarse:h-11" title={scoreData.levelName}>
           <Badge>Lv {scoreData.level}</Badge>
           <span className="font-display font-bold uppercase tracking-wider text-xs text-ice hidden sm:inline short:hidden">
             {scoreData.levelTitle}
           </span>
         </Chip>
         {scoreData.multiplier > 1 && (
-          <Chip className="border-aurora/50 animate-pop-in">
+          <Chip className="border-aurora/50 animate-pop-in pointer-coarse:h-11">
             <HugeiconsIcon icon={SparklesIcon} className="size-4 text-aurora" aria-hidden />
             <span className="glow-num text-aurora">×{scoreData.multiplier}</span>
           </Chip>
