@@ -492,6 +492,8 @@ function emberCrystal(ctx: CanvasRenderingContext2D, c: Coin, p: Palette) {
 }
 
 export const calderaSkin: Skin = {
+  // dark rock on dark rock: a hot ember rim instead of a shadow
+  outline: 'rgba(251, 146, 60, 0.95)',
   drawObstacle(ctx, o, tier: Tier) {
     const p = PALETTES[tier]
     ctx.save()

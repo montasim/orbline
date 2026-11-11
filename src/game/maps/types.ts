@@ -20,6 +20,8 @@ export interface Skin {
   /** draw inside the obstacle's existing box (x, y, width, height); `type` keeps its gameplay meaning */
   drawObstacle?(ctx: CanvasRenderingContext2D, o: Obstacle, tier: Tier): boolean
   drawCrystal?(ctx: CanvasRenderingContext2D, c: Coin, tier: Tier): boolean
+  /** halo traced around every obstacle so hazards always read against this map's scenery */
+  outline?: string
 }
 
 export interface TierStyle {

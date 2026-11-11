@@ -544,6 +544,7 @@ function seedSprite(tier: Tier) {
 }
 
 export const meadowSkin: Skin = {
+  outline: 'rgba(38, 28, 8, 0.8)',
   drawObstacle(ctx, o, tier) {
     ctx.save()
     switch (o.type) {

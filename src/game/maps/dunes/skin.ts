@@ -73,11 +73,15 @@ function paintBoulder(x: Ctx, w: number, h: number, L: Look) {
   }
   poly(outline)
   const g = x.createLinearGradient(0, 0, w, h)
-  g.addColorStop(0, s.base)
-  g.addColorStop(1, mix(L.rock, L.shade, 0.4))
+  // a shade darker than the sandstone cliffs behind it, with a heavy edge, so it reads as a hazard
+  g.addColorStop(0, mix(s.base, L.shade, 0.25))
+  g.addColorStop(1, mix(L.rock, L.shade, 0.6))
   x.fillStyle = g
   x.fill()
-  contour(x, L)
+  x.strokeStyle = rgba(L.shade, 0.95)
+  x.lineWidth = 2.2
+  x.lineJoin = 'round'
+  x.stroke()
   // sunlit upper-right plane
   x.fillStyle = s.lit
   poly([w * 0.36, h * 0.07, w * 0.6, 1, w * 0.85, h * 0.15, w - 0.5, h * 0.52, w * 0.66, h * 0.44, w * 0.42, h * 0.3])
@@ -485,6 +489,7 @@ function gem() {
 }
 
 export const dunesSkin: Skin = {
+  outline: 'rgba(48, 16, 4, 0.9)',
   drawObstacle(ctx, o, tier) {
     const L = LOOKS[tier]
     if (o.type === 'flyer') {

@@ -23,5 +23,5 @@ export const arctic: GameMap = {
       draw: (ctx, tier: Tier) => bg.draw(ctx, LEVELS[tier].bgTheme),
     }
   },
-  skin: {},
+  skin: { outline: 'rgba(8, 18, 45, 0.95)' },
 }

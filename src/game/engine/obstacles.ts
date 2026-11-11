@@ -80,6 +80,25 @@ export class Coin {
   }
 }
 
+/**
+ * Paints only the shadow of `paint`: the art itself is drawn far off to the left and its shadow is
+ * offset back into place, leaving a tight rim plus a soft glow around the obstacle's silhouette.
+ * Shadow offset/blur ignore the transform, hence the device-pixel maths.
+ */
+function outline(ctx: CanvasRenderingContext2D, color: string, paint: () => void) {
+  const k = ctx.getTransform().a
+  const away = 10000
+  ctx.save()
+  ctx.translate(-away, 0)
+  ctx.shadowColor = color
+  ctx.shadowOffsetX = away * k
+  ctx.shadowBlur = 3 * k
+  paint()
+  ctx.shadowBlur = 10 * k
+  paint()
+  ctx.restore()
+}
+
 export class Obstacle {
   passed = false
   animTimer = 0
@@ -186,9 +205,9 @@ export class Obstacle {
         break
       }
       case 'iceblock': {
-        // translucent cube: top face, side face, front face
+        // solid glacier-blue cube (a see-through one vanished against the ice floor): top, side, front
         const d = 8
-        ctx.fillStyle = 'rgba(207, 250, 254, 0.8)'
+        ctx.fillStyle = '#d6f7ff'
         ctx.beginPath()
         ctx.moveTo(x, y + d)
         ctx.lineTo(x + d, y)
@@ -196,7 +215,7 @@ export class Obstacle {
         ctx.lineTo(x + w - d, y + d)
         ctx.closePath()
         ctx.fill()
-        ctx.fillStyle = 'rgba(56, 152, 196, 0.6)'
+        ctx.fillStyle = '#1d6e9e'
         ctx.beginPath()
         ctx.moveTo(x + w - d, y + d)
         ctx.lineTo(x + w, y)
@@ -205,8 +224,8 @@ export class Obstacle {
         ctx.closePath()
         ctx.fill()
         const face = ctx.createLinearGradient(x, y + d, x + w - d, y + h)
-        face.addColorStop(0, 'rgba(186, 240, 252, 0.75)')
-        face.addColorStop(1, 'rgba(56, 189, 248, 0.5)')
+        face.addColorStop(0, '#9ee3f7')
+        face.addColorStop(1, '#2b8cc4')
         ctx.fillStyle = face
         ctx.fillRect(x, y + d, w - d, h - d)
         ctx.strokeStyle = 'rgba(240, 249, 255, 0.9)'
@@ -462,7 +481,13 @@ export class ObstacleManager {
   /** A map skin may take over the art; hitboxes and behaviour stay the same. */
   draw(ctx: CanvasRenderingContext2D, accentColor: string, skin: Skin = {}, tier: Tier = 0) {
     for (const c of this.coins) if (!c.collected && !skin.drawCrystal?.(ctx, c, tier)) c.draw(ctx)
-    for (const o of this.obstacles) if (!skin.drawObstacle?.(ctx, o, tier)) o.draw(ctx, accentColor)
+    for (const o of this.obstacles) {
+      const paint = () => {
+        if (!skin.drawObstacle?.(ctx, o, tier)) o.draw(ctx, accentColor)
+      }
+      if (skin.outline) outline(ctx, skin.outline, paint)
+      paint()
+    }
   }
 
   adjustGround(groundY: number, deltaY: number) {

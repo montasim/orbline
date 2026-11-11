@@ -663,6 +663,7 @@ function drawPearl(ctx: CanvasRenderingContext2D, c: Coin, tier: Tier) {
 // ---------------------------------------------------------------- skin
 
 export const reefSkin: Skin = {
+  outline: 'rgba(2, 24, 44, 0.85)',
   drawObstacle(ctx, o, tier) {
     const { x, y, width: w, height: h } = o
     const key = `${o.type}:${tier}:${w}x${h}`
