@@ -36,7 +36,7 @@ interface HudProps {
 }
 
 // slate-300, not 400: these sit on glass over bright worlds too (Bloom Meadow's sky)
-const label = 'font-display text-xs font-extrabold uppercase tracking-widest text-slate-300 leading-none'
+const label = 'font-display text-xs font-extrabold uppercase tracking-wider min-[400px]:tracking-widest text-slate-300 leading-none'
 // large touch controls keep their own round shape; spacing, type and icons follow DESIGN.md.
 // Touch screens only: with a mouse/keyboard they would just cover the track.
 const touchBtn =
@@ -117,55 +117,30 @@ export function Hud({
 
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between gap-2 p-4 sm:p-6 z-10 select-none">
-      {/* wraps as a fallback when very long numbers would push the buttons off a phone screen */}
-      <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-4 w-full">
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* exception: py-2 (and px-3/gap-3 on phones) keeps the HUD score compact so the top bar fits 375px */}
-          <div className="frost-chip rounded-2xl px-3 py-2 sm:px-4 flex items-center gap-3 sm:gap-4">
-            <div className="flex flex-col gap-1">
-              <span className={label}>Distance</span>
-              <span className="flex items-baseline gap-1 glow-num text-lg sm:text-2xl text-ice leading-none">
-                {scoreData.distance}
-                <span className="text-xs text-slate-200">m</span>
-              </span>
-            </div>
-            <div className="h-8 w-px bg-white/12" />
-            <div className="flex flex-col gap-1">
-              <span className={label}>Score</span>
-              <span className="glow-num text-lg sm:text-2xl text-mint leading-none">
-                {scoreData.score}
-              </span>
-            </div>
+      {/* one row on every screen: all run stats in a single panel left, the two controls right */}
+      <div className="flex items-start justify-between gap-2 sm:gap-4 w-full">
+        {/* exception: py-2, gap-2 and text-base numbers under 400px keep the row clear of the buttons on small phones */}
+        <div className="frost-chip rounded-2xl px-3 py-2 sm:px-4 flex items-center gap-2 min-[400px]:gap-3 sm:gap-4 min-w-0">
+          <div className="flex flex-col gap-1">
+            <span className={label}>Distance</span>
+            <span className="flex items-baseline gap-1 glow-num text-base min-[400px]:text-lg sm:text-2xl text-ice leading-none">
+              {scoreData.distance}
+              <span className="text-xs text-slate-200">m</span>
+            </span>
           </div>
-          <Chip className="pl-2" title={scoreData.levelName}>
-            <Badge className="font-display font-extrabold uppercase">Lv {scoreData.level}</Badge>
-            <span className="font-bold text-ice hidden sm:inline short:hidden">{scoreData.levelTitle}</span>
-          </Chip>
-          {scoreData.multiplier > 1 && (
-            <Chip className="border-aurora/50 animate-pop-in">
-              <HugeiconsIcon icon={SparklesIcon} className="size-4 text-aurora" aria-hidden />
-              <span className="glow-num text-aurora">×{scoreData.multiplier}</span>
-            </Chip>
-          )}
+          <div className="h-8 w-px bg-white/12" />
+          <div className="flex flex-col gap-1">
+            <span className={label}>Score</span>
+            <span className="glow-num text-base min-[400px]:text-lg sm:text-2xl text-mint leading-none">{scoreData.score}</span>
+          </div>
+          <div className="h-8 w-px bg-white/12" />
+          <div className="flex flex-col gap-1">
+            <span className={label}>Crystals</span>
+            <Crystals amount={scoreData.coins} className="text-base min-[400px]:text-lg sm:text-2xl leading-none tabular-nums" />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 pointer-events-auto shrink-0 ml-auto">
-          <Chip className="text-base">
-            <Crystals amount={scoreData.coins} className="tabular-nums" />
-          </Chip>
-          <Button
-            variant="frost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation()
-              onRotate?.()
-            }}
-            onMouseDown={stop}
-            aria-label="Rotate to landscape"
-            title="Rotate to landscape"
-          >
-            <HugeiconsIcon icon={RotateClockwiseIcon} className="text-glacier" aria-hidden />
-          </Button>
+        <div className="flex items-center gap-2 pointer-events-auto shrink-0">
           <Button
             variant="frost"
             size="icon"
@@ -176,6 +151,8 @@ export function Hud({
             onMouseDown={stop}
             aria-label={muted ? 'Turn sound on (M)' : 'Turn sound off (M)'}
             title={muted ? 'Sound off (M)' : 'Sound on (M)'}
+            // under 360px the stats need the room; Pause has the same sound toggle
+            className="max-[359px]:hidden"
           >
             <HugeiconsIcon icon={muted ? VolumeMute02Icon : VolumeHighIcon} className="text-glacier" aria-hidden />
           </Button>
@@ -197,10 +174,22 @@ export function Hud({
 
       {/* tucked under the top bar in one row, so the lane ahead stays clear */}
       <div className="flex flex-wrap justify-center items-center gap-2 self-center mb-auto pointer-events-auto">
+        <Chip className="pl-2" title={scoreData.levelName}>
+          <Badge>Lv {scoreData.level}</Badge>
+          <span className="font-display font-bold uppercase tracking-wider text-xs text-ice hidden sm:inline short:hidden">
+            {scoreData.levelTitle}
+          </span>
+        </Chip>
+        {scoreData.multiplier > 1 && (
+          <Chip className="border-aurora/50 animate-pop-in">
+            <HugeiconsIcon icon={SparklesIcon} className="size-4 text-aurora" aria-hidden />
+            <span className="glow-num text-aurora">×{scoreData.multiplier}</span>
+          </Chip>
+        )}
         {isPortrait && (
-          <Button variant="frost" size="chip" onClick={onRotate} className="text-glacier">
+          <Button variant="frost" size="chip" onClick={onRotate} onMouseDown={stop} className="text-glacier">
             <HugeiconsIcon icon={RotateClockwiseIcon} aria-hidden />
-            Turn sideways for the best view
+            Turn sideways
           </Button>
         )}
         {/* short (landscape-phone) screens show them at the bottom instead, clear of the jump arc */}
@@ -218,7 +207,7 @@ export function Hud({
             e.stopPropagation()
             onStopSlide?.()
           }}
-          className={`${touchBtn} size-16 sm:size-20 text-glacier active:bg-glacier/20`}
+          className={`${touchBtn} frost-glow size-20 sm:size-24 text-glacier active:bg-glacier/20`}
           aria-label="Slide (Down or S)"
           title="Slide (↓ / S)"
         >
