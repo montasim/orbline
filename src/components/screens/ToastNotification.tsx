@@ -12,7 +12,7 @@ export function ToastNotification({ toast, inRun }: { toast: Toast; inRun: boole
       className={cn(
         // in a run: just above the action (--toast-top, set from the ground line), never under the HUD
         inRun
-          ? 'top-[max(calc(8rem+env(safe-area-inset-top)),var(--toast-top,40%))]'
+          ? 'top-[max(calc(9rem+env(safe-area-inset-top)),var(--toast-top,40%))]'
           : 'top-[calc(1rem+env(safe-area-inset-top))]',
         // solid backing: a see-through pop-up got lost over bright worlds
         'bg-night/90',
